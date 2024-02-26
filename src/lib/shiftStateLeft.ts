@@ -1,26 +1,26 @@
-import type { Express } from "express";
-import { baseFetch, baseRedirectUrl } from "./baseFetch";
+import type { Express } from 'express'
+import { baseFetch, baseRedirectUrl } from './baseFetch'
+import { TrayMenu } from './trayMenu'
 
 export const shiftStateLeft = (
   express: Express,
-  makeContextMenu: (users: any[]) => void,
-  users: any[],
+  trayMenu: TrayMenu,
   isDev: boolean
 ) => {
-  express.get("/left", async function (req, res) {
+  express.get('/left', async function (req, res) {
     const result = await baseFetch(
       req,
-      "/api/external/schedule/left",
+      '/api/external/schedule/left',
       {},
       isDev
-    );
-    makeContextMenu([...users, result.users]);
+    )
+    trayMenu.setUsers = [...trayMenu.getUsers, result.users]
     res.redirect(
       baseRedirectUrl(
-        "/schedule/left",
+        '/schedule/left',
         { apiKey: result.apiKey, shiftId: result.shiftId },
         isDev
       )
-    );
-  });
-};
+    )
+  })
+}
