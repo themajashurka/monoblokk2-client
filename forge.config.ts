@@ -66,6 +66,19 @@ const config: ForgeConfig = {
       await fs.rm(gypPath, { recursive: true, force: true });
     },
   },
+  publishers: [
+    {
+      name: "@electron-forge/publisher-github",
+      config: {
+        repository: {
+          owner: "themajashurka",
+          name: "monoblokk2-client",
+        },
+        force: true,
+        draft: false,
+      },
+    },
+  ],
 };
 
 export default config;

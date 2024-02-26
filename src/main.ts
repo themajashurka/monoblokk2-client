@@ -1,3 +1,7 @@
+import { updateElectronApp } from "update-electron-app";
+updateElectronApp({
+  updateInterval: "5 minutes",
+});
 import {
   app,
   BrowserWindow,
@@ -9,17 +13,22 @@ import {
 import path from "path";
 import { getLocalDevices } from "./lib/refreshLocalDevices";
 import _express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 const express = _express();
-express.use(cors());
-import isDev from "electron-is-dev";
-import { shiftStatePresentEndpoint } from "./lib/shiftStatePresentEndpoint";
-import { shiftStateLeftEndpoint } from "./lib/shiftStateLeftEndpoint";
-if (isDev) process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+express.use(cors(), cookieParser());
+let isDev = false;
+import("electron-is-dev").then((_isDev) => {
+  if (_isDev) process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
+  isDev = _isDev as any;
+});
+import { endpoint } from "./lib/endpoints";
 
 import tty from "node:tty";
+import { gt } from "./lib/getPrinters";
 
-const currentUsers: { ip: string; name: string }[] = [];
+const users: { ip: string; name: string }[] = [];
+let currentPrinter = "BIXOLON_SRP_350III";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -64,11 +73,22 @@ app.on("ready", async () => {
   if (!isDev) createWindow();
   tray = new Tray(nativeImage.createFromPath("./M.png"));
 
-  const makeContextMenu = (userData: { ip: string; mac: string }[]) => {
+  const makeContextMenu = (
+    userData: { ip: string; mac: string }[],
+    printerData: any[]
+  ) => {
     const printers = new MenuItem({
       type: "submenu",
       label: "Nyomtatók",
-      submenu: [],
+      submenu: [
+        ...printerData.map((x) => ({
+          label: x.name,
+          enabled: x.status !== "IDLE",
+          type: "radio" as const,
+          checked: x.name === currentPrinter,
+          //submenu: [{ label: "Tesztnyomtatás" }],
+        })),
+      ],
     });
     const users = new MenuItem({
       type: "submenu",
@@ -99,12 +119,12 @@ app.on("ready", async () => {
       });
     } */
   };
-  makeContextMenu([]);
+  makeContextMenu([], gt());
 
   tray.setToolTip("Monoblokk kliens");
 
-  shiftStatePresentEndpoint(express, makeContextMenu);
-  shiftStateLeftEndpoint(express, makeContextMenu);
+  endpoint.shiftStatePresent(express, makeContextMenu, users, isDev);
+  endpoint.shiftStateLeft(express, makeContextMenu, users, isDev);
 
   /* const clearLastLine = () => {
     process.stdout.moveCursor(0, -1); // up one line
