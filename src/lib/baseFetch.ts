@@ -1,43 +1,40 @@
-import type { Request } from "express";
+import type { Request } from 'express'
+import { TrayMenu } from './trayMenu'
 
-type Object = { [key: string]: any };
+type Object = { [key: string]: any }
 
-export const baseUrl = (isDev: boolean) =>
-  isDev ? "https://localhost:5555" : "https://2.monoblokk.eu";
+export const baseUrl = (dev: boolean) =>
+  dev ? 'https://localhost:5555' : 'https://2.monoblokk.eu'
 
 export const baseFetch = async (
-  req: Request,
+  deviceId: string,
   pathname: string,
   body: { [key: string]: any },
-  isDev: boolean
+  trayMenu: TrayMenu
 ) => {
-  const url = baseUrl(isDev) + pathname;
-  const fd = new FormData();
-  fd.set("deviceId", req.cookies.deviceId);
-  for (const key in body) {
-    fd.set(key, body[key]);
-  }
-  let result: Object;
-  try {
-    result = await fetch(url, {
-      method: "post",
-      body: fd,
-      headers: {
-        "Monoblokk-Api-Key": process.env.APIKEY_EXTERNAL_SCHEDULE,
-      },
-    }).then((x) => x.json() as Object);
-  } catch (error) {
-    console.error(error);
-    result = { error: "fetch" };
-  }
-  return result;
-};
+  const url = baseUrl(trayMenu.dev) + pathname
+  let result: Object
+
+  result = await fetch(url, {
+    method: 'post',
+    body: JSON.stringify({
+      ...body,
+      deviceId,
+    }),
+    headers: {
+      'Monoblokk-Api-Key': trayMenu.apiKey,
+    },
+  }).then((x) => x.json() as Object)
+  result = { ok: true, ...result.details }
+
+  return result
+}
 
 export const baseRedirectUrl = (
   pathname: string,
   body: { [key: string]: any },
-  isDev: boolean
+  dev: boolean
 ) => {
-  const sp = new URLSearchParams(Object.entries(body));
-  return `${baseUrl(isDev)}${pathname}?${sp.toString()}`;
-};
+  const sp = new URLSearchParams(Object.entries(body))
+  return `${baseUrl(dev)}${pathname}?${sp.toString()}`
+}

@@ -2,9 +2,8 @@ import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
 })
-import { app, BrowserWindow, Tray, Menu, MenuItem, nativeImage } from 'electron'
+import { app, BrowserWindow, Tray } from 'electron'
 import path from 'path'
-import { getLocalDevices } from './lib/refreshLocalDevices'
 import _express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -15,9 +14,8 @@ if (dev) process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 import { endpoint } from './lib/endpoints'
 import { usb } from 'usb'
 import { TrayMenu } from './lib/trayMenu'
-import { Printer } from './lib/printer'
 
-const trayMenu = new TrayMenu()
+const trayMenu = new TrayMenu(dev)
 
 usb.on('attach', () => {
   trayMenu.refreshPrinters()
@@ -64,15 +62,13 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-let tray: Tray = null
 app.on('ready', async () => {
-  if (!dev) createWindow()
+  await trayMenu.init()
+  await trayMenu.make()
 
-  trayMenu.init()
-  trayMenu.make()
-
-  endpoint.shiftStatePresent(express, trayMenu, dev)
-  endpoint.shiftStateLeft(express, trayMenu, dev)
+  endpoint.shiftStatePresent(express, trayMenu)
+  endpoint.shiftStateLeft(express, trayMenu)
+  endpoint.welcome(express)
 
   /* const clearLastLine = () => {
     process.stdout.moveCursor(0, -1); // up one line
