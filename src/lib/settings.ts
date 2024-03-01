@@ -37,7 +37,7 @@ export class Settings {
     await fs.writeFile(Settings.settingsPath, JSON.stringify(data, null, ' '))
   }
 
-  loadEnvFile = async (path: string) => {
+  static loadEnvFile = async (trayMenu: TrayMenu, path: string) => {
     let env: Env
     try {
       env = JSON.parse(await fs.readFile(path, { encoding: 'utf8' }))
@@ -48,15 +48,12 @@ export class Settings {
     if (!env.locationName || !env.passcode) {
       return
     }
-    this.trayMenu.locationName = env.locationName
-    this.trayMenu.passode = env.passcode
+    trayMenu.locationName = env.locationName
+    trayMenu.passode = env.passcode
     return env
   }
 
-  getApiKey = async (envPath: string) => {
-    const env = await this.loadEnvFile(envPath)
-    if (!env) return
-
+  getApiKey = async (env: Env) => {
     try {
       const settings = await baseFetch(
         Settings.getMacIp().mac,
@@ -74,8 +71,6 @@ export class Settings {
       this.trayMenu.passode = env.passcode
 
       await Settings.writeSettings(env)
-
-      this.trayMenu.make()
     } catch (error) {
       console.error(error)
     }
@@ -84,7 +79,10 @@ export class Settings {
   get = async (): Promise<boolean> => {
     let showPasscodeDialog: boolean = true
     try {
-      const env = await this.loadEnvFile(Settings.settingsPath)
+      const env = await Settings.loadEnvFile(
+        this.trayMenu,
+        Settings.settingsPath
+      )
       if (!env) {
         return showPasscodeDialog
       }
@@ -97,6 +95,7 @@ export class Settings {
       )
 
       this.imported = settings
+      await this.getApiKey(env)
       this.syncImported()
       await Settings.writeSettings({
         passcode: this.trayMenu.passode,

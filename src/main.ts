@@ -66,8 +66,8 @@ app.on('ready', async () => {
   await trayMenu.init()
   await trayMenu.make()
 
-  endpoint.shiftStatePresent(express, trayMenu)
-  endpoint.shiftStateLeft(express, trayMenu)
+  endpoint.setShiftPresent(express, trayMenu)
+  endpoint.setShiftLeft(express, trayMenu)
   endpoint.welcome(express)
 
   /* const clearLastLine = () => {

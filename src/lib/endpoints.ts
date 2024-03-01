@@ -1,9 +1,8 @@
-import { shiftStatePresent } from './shiftStatePresent'
-import { shiftStateLeft } from './shiftStateLeft'
+import { setShiftState } from './setShiftState'
 import { welcome } from './welcome'
 
 export const endpoint = {
-  shiftStatePresent,
-  shiftStateLeft,
+  setShiftPresent: setShiftState('Present'),
+  setShiftLeft: setShiftState('Left'),
   welcome,
 }

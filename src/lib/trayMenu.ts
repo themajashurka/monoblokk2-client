@@ -184,6 +184,9 @@ export class TrayMenu {
     if (envPath.length === 0) return
 
     await fs.unlink(Settings.settingsPath)
-    await this.settings.getApiKey(envPath[0])
+    const env = await Settings.loadEnvFile(this, envPath[0])
+    if (!env) return
+    await this.settings.getApiKey(env)
+    this.make()
   }
 }
