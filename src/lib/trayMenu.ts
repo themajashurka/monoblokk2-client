@@ -170,23 +170,20 @@ export class TrayMenu {
   }
 
   acquireClientKey = async () => {
-    const envPath = (
-      await dialog.showOpenDialog({
-        buttonLabel: 'Betölt',
-        message: 'Cégkód betöltése',
-        title: 'Cégkód betöltése',
-        properties: ['openFile'],
-        filters: [{ name: 'JSON', extensions: ['json'] }],
-        defaultPath: this.dev ? path.resolve(__dirname, '../../') : undefined,
-      })
-    ).filePaths
+    console.time('dialog')
+    const envPath = dialog.showOpenDialogSync({
+      buttonLabel: 'Betölt',
+      message: 'Cégkód betöltése',
+      title: 'Cégkód betöltése',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      defaultPath: this.dev ? path.resolve(__dirname, '../../') : undefined,
+    })!
+    console.timeEnd('dialog')
 
     if (envPath.length === 0) return
 
-    try {
-      await fs.unlink(Settings.settingsPath)
-    } catch (error) {}
-
+    await fs.unlink(Settings.settingsPath).catch((x) => {})
     const env = await Settings.loadEnvFile(this, envPath[0])
     if (!env) return
     await this.settings.getApiKey(env)
