@@ -15,14 +15,14 @@ export const setShiftState =
         {},
         trayMenu
       )
-      console.log('result', result)
+      console.log('result', result, trayMenu.apiKey)
       if (result.ok) {
         //trayMenu.setUsers = [...trayMenu.getUsers, result.users]
         res.redirect(
           baseRedirectUrl(
             '/schedule/' + state.toLocaleLowerCase(),
             {
-              apiKey: trayMenu.apiKey,
+              apiKey: result.apiKey,
               shiftId: result.shiftId,
               confirmed: true,
             },
