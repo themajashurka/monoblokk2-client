@@ -183,10 +183,14 @@ export class TrayMenu {
 
     if (envPath.length === 0) return
 
-    await fs.unlink(Settings.settingsPath)
+    try {
+      await fs.unlink(Settings.settingsPath)
+    } catch (error) {}
+
     const env = await Settings.loadEnvFile(this, envPath[0])
     if (!env) return
     await this.settings.getApiKey(env)
+    this.showPasscodeDialog = await this.settings.get()
     this.make()
   }
 }
