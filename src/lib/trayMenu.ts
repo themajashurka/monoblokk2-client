@@ -4,6 +4,7 @@ import path from 'path'
 import { Settings } from './settings'
 import fs from 'fs/promises'
 import { baseFetch } from './baseFetch'
+import { Nettest } from './nettest'
 
 type Users = { ip: string; name: string }[]
 
@@ -16,8 +17,8 @@ export class TrayMenu {
   locationName!: string
   dev: boolean
   private showPasscodeDialog!: boolean
-
   settings: Settings
+  nettest: Nettest
 
   public set setPrinters(p: Printer[]) {
     this.printers = p
@@ -45,18 +46,21 @@ export class TrayMenu {
     this.printers = Printer.getPrinters(this)
     this.users = []
     this.settings = new Settings(this)
+    this.nettest = new Nettest(this)
   }
 
   init = async () => {
     this.showPasscodeDialog = await this.settings.get()
     this.tray = new Tray(nativeImage.createFromPath('./M.png'))
     this.tray.setToolTip('Monoblokk kliens')
+    const ipMac = this.settings.getMacIp()
     await baseFetch(
-      Settings.getMacIp().mac,
+      ipMac.mac,
       '/api/external/local-client/inform-ip',
-      { ipAddress: Settings.getMacIp().ip },
+      { ipAddress: ipMac.ip },
       this
     )
+    if (!this.dev) this.nettest.beginTesting()
   }
 
   make = async () => {
@@ -144,11 +148,70 @@ export class TrayMenu {
         ]
       : []
     const quit = new MenuItem({ label: 'Kilépés', click: () => app.quit() })
+    const nettest = new MenuItem({
+      label: 'Internet sebesség',
+      submenu: [
+        ...(this.nettest.inProgress
+          ? [{ label: 'Mérés folyamatban...' }]
+          : [
+              {
+                label: 'Mérés most',
+                click: () => this.nettest.testAndSubmit(),
+              },
+            ]),
+        ...(this.nettest.basicResults
+          ? [
+              { type: 'separator' as const },
+              ...(this.nettest.lastMeasurement
+                ? [
+                    {
+                      enabled: false,
+                      label: `Utolsó mérés: ${Nettest.parseDate(
+                        this.nettest.lastMeasurement
+                      )}`,
+                    },
+                  ]
+                : []),
+              {
+                enabled: false,
+                label: `Letöltés: ${this.nettest.basicResults.downloadSpeedInMbps.toFixed(
+                  2
+                )}Mb/s`,
+              },
+              {
+                enabled: false,
+                label: `Feltöltés: ${this.nettest.basicResults.uploadSpeedInMbps.toFixed(
+                  2
+                )}Mb/s`,
+              },
+              {
+                enabled: false,
+                label: `Ping: ${this.nettest.basicResults.pingInMs.toFixed(
+                  2
+                )}ms`,
+              },
+
+              ...(this.nettest.nextMeasurement
+                ? [
+                    { type: 'separator' as const },
+                    {
+                      enabled: false,
+                      label: `Következő mérés: ${Nettest.parseDate(
+                        this.nettest.nextMeasurement
+                      )}`,
+                    },
+                  ]
+                : []),
+            ]
+          : []),
+      ],
+    })
 
     ////////////////////////////////////////////////////
     const contextMenu = Menu.buildFromTemplate([
       printersMenuItem,
       usersMenuItem,
+      nettest,
       { type: 'separator' },
       ...acquireApiKey,
       ...locationName,

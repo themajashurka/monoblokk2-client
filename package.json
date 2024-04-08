@@ -8,6 +8,11 @@
     "url": "https://github.com/themajashurka/monoblokk2-client.git"
   },
   "main": ".vite/build/main.js",
+  "build": {
+    "extraResources": [
+      "./extraResources/**"
+    ]
+  },
   "scripts": {
     "start": "env-cmd electron-forge start",
     "start-mac": "CXXFLAGS=--std=c++17 electron-forge start",
@@ -16,7 +21,8 @@
     "make-win": "electron-forge make --platform=win32",
     "publish": "env-cmd electron-forge publish",
     "publish-win": "env-cmd electron-forge publish --platform=win32",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "rebuild": "./node_modules/.bin/electron-rebuild"
   },
   "prettier": {
     "semi": false,
@@ -62,12 +68,8 @@
     "cors": "^2.8.5",
     "electron-app-settings": "^1.3.1",
     "electron-squirrel-startup": "^1.0.0",
-    "electron-sudo": "^4.0.12",
     "express": "^4.18.2",
-    "node-arp": "^1.0.6",
     "node-thermal-printer": "^4.4.2",
-    "ping": "^0.4.4",
-    "sudo-prompt": "^9.2.1",
     "update-electron-app": "^3.0.0",
     "usb": "^2.11.0"
   }

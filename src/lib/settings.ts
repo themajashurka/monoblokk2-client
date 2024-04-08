@@ -24,13 +24,18 @@ export class Settings {
 
   static settingsPath = './settings.json'
 
-  static getMacIp = () => {
+  getMacIp = () => {
     const data = Object.entries(os.networkInterfaces())
       .map((x) => x[1]!)
       .flat()
       .filter((x) => x.address.startsWith('192.168'))[0]!
 
-    return { mac: data.mac, ip: data.address }
+    try {
+      return { mac: data.mac, ip: data.address }
+    } catch (error) {
+      if (this.trayMenu.dev) return { mac: '00:00:00:00', ip: '0.0.0.0' }
+      else throw Error('app needs to be started on local network')
+    }
   }
 
   static writeSettings = async (data: any) => {
@@ -56,7 +61,7 @@ export class Settings {
   getApiKey = async (env: Env) => {
     try {
       const settings = await baseFetch(
-        Settings.getMacIp().mac,
+        this.getMacIp().mac,
         '/api/external/local-client/link-location',
         {
           locationName: env.locationName,
@@ -88,11 +93,12 @@ export class Settings {
       }
 
       const settings = await baseFetch(
-        Settings.getMacIp().mac,
+        this.getMacIp().mac,
         '/api/external/local-client/get-settings',
         {},
         this.trayMenu
       )
+      console.log('afeterbase')
 
       this.imported = settings
       await this.getApiKey(env)
@@ -111,7 +117,7 @@ export class Settings {
 
   save = async (settingsData: Partial<SettingsData>) => {
     await baseFetch(
-      Settings.getMacIp().mac,
+      this.getMacIp().mac,
       '/api/external/local-client/set-settings',
       settingsData,
       this.trayMenu

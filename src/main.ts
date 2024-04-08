@@ -1,6 +1,7 @@
 import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
+  notifyUser: false,
 })
 import { app, BrowserWindow, Tray } from 'electron'
 import path from 'path'
@@ -14,6 +15,7 @@ if (dev) process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 import { endpoint } from './lib/endpoints'
 import { usb } from 'usb'
 import { TrayMenu } from './lib/trayMenu'
+import { Nettest } from './lib/nettest'
 
 const trayMenu = new TrayMenu(dev)
 
@@ -56,15 +58,19 @@ const createWindow = () => {
   }
 
   // Open the DevTools.
-  //mainWindow.webContents.openDevTools();
+  if (dev) mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-  await trayMenu.init()
-  await trayMenu.make()
+  try {
+    await trayMenu.init()
+    await trayMenu.make()
+  } catch (error) {
+    console.error(error)
+  }
 
   endpoint.setShiftPresent(express, trayMenu)
   endpoint.setShiftLeft(express, trayMenu)
@@ -93,6 +99,9 @@ app.on('ready', async () => {
 app.on('window-all-closed', () => {
   //app.quit();
 })
+
+// Create the Electron app and create the main window when it's ready
+if (!dev) app.whenReady().then(createWindow)
 
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
