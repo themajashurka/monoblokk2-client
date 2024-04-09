@@ -65,7 +65,7 @@ export class Nettest {
   testAndSubmit = async (currentInterval?: number) => {
     try {
       const results = await this.test()
-      if(!process.env.BYPASS_SERVER_COMMUNICATION) await this.submitTestResults(results)
+      if(!(this.trayMenu.dev && process.env.BYPASS_SERVER_COMMUNICATION)) await this.submitTestResults(results)
       if (currentInterval) {
         const currentIntervalInMinutes = currentInterval / 1000 / 60
         console.log(

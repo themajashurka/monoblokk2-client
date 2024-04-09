@@ -53,11 +53,11 @@ export class TrayMenu {
   }
 
   init = async () => {
-    this.showPasscodeDialog = process.env.BYPASS_SERVER_COMMUNICATION? false : await this.settings.get()
+    this.showPasscodeDialog = (this.dev && process.env.BYPASS_SERVER_COMMUNICATION) ? false : await this.settings.get()
     this.tray = new Tray(nativeImage.createFromPath('./M.png'))
     this.tray.setToolTip('Monoblokk kliens')
     const ipMac = this.settings.getMacIp()
-    if(!process.env.BYPASS_SERVER_COMMUNICATION) await baseFetch(
+    if(!(this.dev && process.env.BYPASS_SERVER_COMMUNICATION)) await baseFetch(
       ipMac.mac,
       '/api/external/local-client/inform-ip',
       { ipAddress: ipMac.ip },
