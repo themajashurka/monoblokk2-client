@@ -19,8 +19,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "make-win": "electron-forge make --platform=win32",
-    "publish": "env-cmd electron-forge publish",
-    "publish-win": "env-cmd electron-forge publish --platform=win32",
+    "publish": "electron-forge publish",
+    "publish-win": "electron-forge publish --platform=win32",
     "lint": "eslint --ext .ts,.tsx .",
     "rebuild": "./node_modules/.bin/electron-rebuild"
   },
