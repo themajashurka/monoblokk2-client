@@ -5,6 +5,9 @@ import { Settings } from './settings'
 import fs from 'fs/promises'
 import { baseFetch } from './baseFetch'
 import { Nettest } from './nettest'
+//@ts-ignore
+import {config} from '@dotenvx/dotenvx'
+config()
 
 type Users = { ip: string; name: string }[]
 
@@ -50,11 +53,11 @@ export class TrayMenu {
   }
 
   init = async () => {
-    this.showPasscodeDialog = await this.settings.get()
+    this.showPasscodeDialog = process.env.BYPASS_SERVER_COMMUNICATION? false : await this.settings.get()
     this.tray = new Tray(nativeImage.createFromPath('./M.png'))
     this.tray.setToolTip('Monoblokk kliens')
     const ipMac = this.settings.getMacIp()
-    await baseFetch(
+    if(!process.env.BYPASS_SERVER_COMMUNICATION) await baseFetch(
       ipMac.mac,
       '/api/external/local-client/inform-ip',
       { ipAddress: ipMac.ip },

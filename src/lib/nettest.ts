@@ -1,6 +1,10 @@
 import { baseFetch } from './baseFetch'
 import { TrayMenu } from './trayMenu'
 import { exec } from 'child_process'
+import path from 'path'
+//@ts-ignore
+import {config} from '@dotenvx/dotenvx'
+config()
 
 export class Nettest {
   trayMenu: TrayMenu
@@ -15,10 +19,10 @@ export class Nettest {
   nextMeasurement: Date | undefined
   lastMeasurement: Date | undefined
 
-  public get speedtestBinaryPath(): string {
-    return `${
-      this.trayMenu.dev ? 'extraResources' : process.resourcesPath
-    }/speedtest_${process.platform}` //darwin, linux, win32
+  public get speedtestBinaryPath() {
+    const speedtestBinaryDir = this.trayMenu.dev ? 'extraResources' : process.resourcesPath
+    const speedtestBinaryFile = `speedtest_${process.platform}${process.platform === 'win32' ? '.exe' : ''}` //darwin, linux, win32
+    return path.join(speedtestBinaryDir,speedtestBinaryFile) 
   }
 
   constructor(trayMenu: TrayMenu) {
@@ -61,7 +65,7 @@ export class Nettest {
   testAndSubmit = async (currentInterval?: number) => {
     try {
       const results = await this.test()
-      await this.submitTestResults(results)
+      if(!process.env.BYPASS_SERVER_COMMUNICATION) await this.submitTestResults(results)
       if (currentInterval) {
         const currentIntervalInMinutes = currentInterval / 1000 / 60
         console.log(

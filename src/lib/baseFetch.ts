@@ -1,5 +1,7 @@
-import type { Request } from 'express'
 import { TrayMenu } from './trayMenu'
+//@ts-ignore
+import {config} from '@dotenvx/dotenvx'
+config()
 
 type Object = { [key: string]: any }
 

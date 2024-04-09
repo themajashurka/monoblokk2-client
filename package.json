@@ -14,7 +14,7 @@
     ]
   },
   "scripts": {
-    "start": "env-cmd electron-forge start",
+    "start": "electron-forge start",
     "start-mac": "CXXFLAGS=--std=c++17 electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
