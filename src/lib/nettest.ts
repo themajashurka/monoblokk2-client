@@ -19,7 +19,7 @@ export class Nettest {
   public get speedtestBinaryPath() {
     const speedtestBinaryDir = this.trayMenu.dev
       ? 'speedtest_binary'
-      : process.resourcesPath
+      : path.join(process.resourcesPath, 'speedtest_binary')
     const speedtestBinaryFile = `speedtest_${process.platform}${
       process.platform === 'win32' ? '.exe' : ''
     }` //darwin, linux, win32

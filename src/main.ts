@@ -77,12 +77,6 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-  const _path = 
-    app.isPackaged
-      ? path.join(process.resourcesPath)
-      : path.resolve(process.cwd())
-    console.log(_path, await fs.readdir(_path))
-  
   try {
     await trayMenu.init()
     await trayMenu.make()
