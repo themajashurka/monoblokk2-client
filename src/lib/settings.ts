@@ -34,7 +34,7 @@ export class Settings {
       return { mac: data.mac, ip: data.address }
     } catch (error) {
       if (this.trayMenu.dev) return { mac: '00:00:00:00', ip: '0.0.0.0' }
-      else throw Error('app needs to be started on local network')
+      else throw Error('app needs to be a part of a local network')
     }
   }
 

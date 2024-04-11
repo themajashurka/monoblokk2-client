@@ -15,7 +15,6 @@ if (dev) process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 import { endpoint } from './lib/endpoints'
 import { usb } from 'usb'
 import { TrayMenu } from './lib/trayMenu'
-import { Nettest } from './lib/nettest'
 //@ts-ignore
 import { config } from '@dotenvx/dotenvx'
 config({
@@ -23,6 +22,11 @@ config({
     ? path.join(process.resourcesPath, '.env')
     : path.resolve(process.cwd(), '.env'),
 })
+import log from 'electron-log/node'
+console.log = log.log
+console.error = log.error
+console.info = log.info
+log.eventLogger.startLogging()
 
 const trayMenu = new TrayMenu(dev)
 

@@ -55,15 +55,16 @@ export class TrayMenu {
       : await this.settings.get()
     this.tray = new Tray(nativeImage.createFromPath('./M.png'))
     this.tray.setToolTip('Monoblokk kliens')
-    const ipMac = this.settings.getMacIp()
-    if (!process.env.BYPASS_SERVER_COMMUNICATION)
+    if (!process.env.BYPASS_SERVER_COMMUNICATION) {
+      const ipMac = this.settings.getMacIp()
       await baseFetch(
         ipMac.mac,
         '/api/external/local-client/inform-ip',
         { ipAddress: ipMac.ip },
         this
       )
-    if (!this.dev) this.nettest.beginTesting()
+      if (!this.dev) this.nettest.beginTesting()
+    }
   }
 
   make = async () => {
