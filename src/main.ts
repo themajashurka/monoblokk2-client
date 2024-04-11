@@ -23,6 +23,7 @@ config({
     : path.resolve(process.cwd(), '.env'),
 })
 import log from 'electron-log/node'
+import fs from 'fs/promises'
 console.log = log.log
 console.error = log.error
 console.info = log.info
@@ -76,6 +77,12 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
+  const _path = 
+    app.isPackaged
+      ? path.join(process.resourcesPath)
+      : path.resolve(process.cwd())
+    console.log(_path, await fs.readdir(_path))
+  
   try {
     await trayMenu.init()
     await trayMenu.make()

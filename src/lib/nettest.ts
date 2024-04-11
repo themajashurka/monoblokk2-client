@@ -18,7 +18,7 @@ export class Nettest {
 
   public get speedtestBinaryPath() {
     const speedtestBinaryDir = this.trayMenu.dev
-      ? 'extraResources'
+      ? 'speedtest_binary'
       : process.resourcesPath
     const speedtestBinaryFile = `speedtest_${process.platform}${
       process.platform === 'win32' ? '.exe' : ''

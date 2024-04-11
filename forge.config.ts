@@ -12,6 +12,10 @@ import fs from "fs/promises";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    extraResource:[
+      '.env',
+      'speedtest_binary'
+    ]
   },
   rebuildConfig: {},
   makers: [
