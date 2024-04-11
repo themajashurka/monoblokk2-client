@@ -10,7 +10,8 @@
   "main": ".vite/build/main.js",
   "build": {
     "extraResources": [
-      "./extraResources/**"
+      "./extraResources/**",
+      ".env"
     ]
   },
   "scripts": {

@@ -16,6 +16,13 @@ import { endpoint } from './lib/endpoints'
 import { usb } from 'usb'
 import { TrayMenu } from './lib/trayMenu'
 import { Nettest } from './lib/nettest'
+//@ts-ignore
+import { config } from '@dotenvx/dotenvx'
+config({
+  path: app.isPackaged
+    ? path.join(process.resourcesPath, '.env')
+    : path.resolve(process.cwd(), '.env'),
+})
 
 const trayMenu = new TrayMenu(dev)
 
@@ -72,9 +79,10 @@ app.on('ready', async () => {
     console.error(error)
   }
 
+  endpoint.welcome(express)
   endpoint.setShiftPresent(express, trayMenu)
   endpoint.setShiftLeft(express, trayMenu)
-  endpoint.welcome(express)
+  endpoint.getLocationName(express, trayMenu)
 
   /* const clearLastLine = () => {
     process.stdout.moveCursor(0, -1); // up one line
