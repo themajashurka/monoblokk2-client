@@ -1,26 +1,23 @@
-import type { ForgeConfig } from "@electron-forge/shared-types";
-import { MakerSquirrel } from "@electron-forge/maker-squirrel";
-import { MakerZIP } from "@electron-forge/maker-zip";
-import { MakerDeb } from "@electron-forge/maker-deb";
-import { MakerRpm } from "@electron-forge/maker-rpm";
-import { VitePlugin } from "@electron-forge/plugin-vite";
-import { FusesPlugin } from "@electron-forge/plugin-fuses";
-import { FuseV1Options, FuseVersion } from "@electron/fuses";
-import path from "path";
-import fs from "fs/promises";
+import type { ForgeConfig } from '@electron-forge/shared-types'
+import { MakerSquirrel } from '@electron-forge/maker-squirrel'
+import { MakerZIP } from '@electron-forge/maker-zip'
+import { MakerDeb } from '@electron-forge/maker-deb'
+import { MakerRpm } from '@electron-forge/maker-rpm'
+import { VitePlugin } from '@electron-forge/plugin-vite'
+import { FusesPlugin } from '@electron-forge/plugin-fuses'
+import { FuseV1Options, FuseVersion } from '@electron/fuses'
+import path from 'path'
+import fs from 'fs/promises'
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    extraResource:[
-      '.env',
-      'speedtest_binary'
-    ]
+    extraResource: ['.env', 'speedtest_binary', 'print_test.pdf'],
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
-    new MakerZIP({}, ["darwin"]),
+    new MakerZIP({}, ['darwin']),
     new MakerRpm({}),
     new MakerDeb({}),
   ],
@@ -31,18 +28,18 @@ const config: ForgeConfig = {
       build: [
         {
           // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
-          entry: "src/main.ts",
-          config: "vite.main.config.ts",
+          entry: 'src/main.ts',
+          config: 'vite.main.config.ts',
         },
         {
-          entry: "src/preload.ts",
-          config: "vite.preload.config.ts",
+          entry: 'src/preload.ts',
+          config: 'vite.preload.config.ts',
         },
       ],
       renderer: [
         {
-          name: "main_window",
-          config: "vite.renderer.config.ts",
+          name: 'main_window',
+          config: 'vite.renderer.config.ts',
         },
       ],
     }),
@@ -62,27 +59,35 @@ const config: ForgeConfig = {
     packageAfterPrune: async (_config, buildPath) => {
       const gypPath = path.join(
         buildPath,
-        "node_modules",
-        "@thiagoelg/node-printer",
-        "build",
-        "node_gyp_bins"
-      );
-      await fs.rm(gypPath, { recursive: true, force: true });
+        'node_modules',
+        '@thiagoelg/node-printer',
+        'build',
+        'node_gyp_bins'
+      )
+      await fs.rm(gypPath, { recursive: true, force: true })
+      const gypPathUsb = path.join(
+        buildPath,
+        'node_modules',
+        'usb',
+        'build',
+        'node_gyp_bins'
+      )
+      await fs.rm(gypPathUsb, { recursive: true, force: true })
     },
   },
   publishers: [
     {
-      name: "@electron-forge/publisher-github",
+      name: '@electron-forge/publisher-github',
       config: {
         repository: {
-          owner: "themajashurka",
-          name: "monoblokk2-client",
+          owner: 'themajashurka',
+          name: 'monoblokk2-client',
         },
         force: true,
         draft: false,
       },
     },
   ],
-};
+}
 
-export default config;
+export default config

@@ -20,8 +20,8 @@ export class TrayMenu {
   settings: Settings
   nettest: Nettest
 
-  public set setPrinters(p: Printer[]) {
-    this.printers = p
+  public set setPrinters(printers: Printer[]) {
+    this.printers = printers
     this.settings.syncImported()
     this.make()
   }

@@ -16,7 +16,7 @@ type SettingsData = {
 
 export class Settings {
   private trayMenu: TrayMenu
-  imported!: Partial<SettingsData>
+  imported: Partial<SettingsData> = {}
 
   constructor(trayMenu: TrayMenu) {
     this.trayMenu = trayMenu
