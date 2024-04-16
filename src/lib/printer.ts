@@ -8,6 +8,7 @@ import * as driver from '@thiagoelg/node-printer'
 import fs from 'fs/promises'
 import { PrinterDetails } from '@thiagoelg/node-printer'
 import { TrayMenu } from './trayMenu'
+import path from 'path'
 
 export type PrinterType = 'A4' | 'Thermal' | 'Sticker'
 export type PrinterObj = { name: string; type: PrinterType; current: boolean }
@@ -52,7 +53,11 @@ export class Printer {
   test = async () => {
     switch (this.type) {
       case 'A4':
-        const pdfBuffer = await fs.readFile('./print_test.pdf')
+        const pdfBuffer = await fs.readFile(
+          this.trayMenu.dev
+            ? './print_test.pdf'
+            : path.join(process.resourcesPath, 'print_test.pdf')
+        )
 
         try {
           driver.printDirect({
