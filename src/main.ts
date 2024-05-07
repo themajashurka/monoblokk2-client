@@ -1,7 +1,6 @@
 import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
-  notifyUser: false,
 })
 import { app, BrowserWindow, Tray } from 'electron'
 import path from 'path'
@@ -23,7 +22,6 @@ config({
     : path.resolve(process.cwd(), '.env'),
 })
 import log from 'electron-log/node'
-import fs from 'fs/promises'
 console.log = log.log
 console.error = log.error
 console.info = log.info
@@ -122,6 +120,12 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     if (!dev) createWindow()
   }
+})
+
+app.on('before-quit', async (e) => {
+  e.preventDefault()
+  await trayMenu.cctv.killService()
+  app.exit()
 })
 
 // In this file you can include the rest of your app's specific main process

@@ -1,9 +1,9 @@
-import { Request } from 'express'
 import { TrayMenu } from './trayMenu'
 import { baseFetch } from './baseFetch'
 import os from 'os'
 import fs from 'fs/promises'
-import { PrinterObj } from './printer'
+import type { PrinterObj } from './printer'
+import type { CCTVObj } from './cctv'
 
 type Env = {
   locationName: string
@@ -12,6 +12,8 @@ type Env = {
 
 type SettingsData = {
   printers: PrinterObj[]
+  cctvs: CCTVObj[]
+  webrtcPort: number
 }
 
 export class Settings {
@@ -98,7 +100,6 @@ export class Settings {
         {},
         this.trayMenu
       )
-      console.log('afeterbase')
 
       this.imported = settings
       await this.getApiKey(env)
@@ -134,6 +135,12 @@ export class Settings {
           currentPrinter.type = p.type
         }
       })
+    }
+    if (this.imported.cctvs) {
+      this.trayMenu.cctv.setCameraLogins(this.imported.cctvs)
+    }
+    if (this.imported.webrtcPort) {
+      this.trayMenu.cctv.port = this.imported.webrtcPort
     }
   }
 }

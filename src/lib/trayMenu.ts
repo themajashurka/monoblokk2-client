@@ -5,6 +5,7 @@ import { Settings } from './settings'
 import fs from 'fs/promises'
 import { baseFetch } from './baseFetch'
 import { Nettest } from './nettest'
+import { CCTV } from './cctv'
 
 type Users = { ip: string; name: string }[]
 
@@ -19,6 +20,7 @@ export class TrayMenu {
   private showPasscodeDialog!: boolean
   settings: Settings
   nettest: Nettest
+  cctv: CCTV
 
   public set setPrinters(printers: Printer[]) {
     this.printers = printers
@@ -47,6 +49,7 @@ export class TrayMenu {
     this.users = []
     this.settings = new Settings(this)
     this.nettest = new Nettest(this)
+    this.cctv = new CCTV(this)
   }
 
   init = async () => {
@@ -65,6 +68,7 @@ export class TrayMenu {
       )
       if (!this.dev) this.nettest.beginTesting()
     }
+    this.cctv.startService()
   }
 
   make = async () => {
@@ -211,10 +215,31 @@ export class TrayMenu {
       ],
     })
 
+    const cctv = new MenuItem({
+      label: 'Kamerák',
+      submenu: this.cctv.cameraLogins
+        .map((cl, i) => [
+          {
+            label: `Név: ${cl.username}`,
+            enabled: false,
+          },
+          { label: `IP: ${cl.ip}`, enabled: false },
+          {
+            label: `URL: http://localhost:8891/${cl.username}`,
+            enabled: false,
+          },
+          ...(i === this.cctv.cameraLogins.length - 1
+            ? []
+            : [{ type: 'separator' as const }]),
+        ])
+        .flat(),
+    })
+
     ////////////////////////////////////////////////////
     const contextMenu = Menu.buildFromTemplate([
       printersMenuItem,
       usersMenuItem,
+      cctv,
       nettest,
       { type: 'separator' },
       ...acquireApiKey,

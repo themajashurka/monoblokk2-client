@@ -11,7 +11,7 @@ import { TrayMenu } from './trayMenu'
 import path from 'path'
 
 export type PrinterType = 'A4' | 'Thermal' | 'Sticker'
-export type PrinterObj = { name: string; type: PrinterType; current: boolean }
+export type PrinterObj = Pick<Printer, 'name' | 'type' | 'current'>
 
 export class Printer {
   type: PrinterType = 'A4'

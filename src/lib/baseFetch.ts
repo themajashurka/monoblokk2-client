@@ -25,7 +25,7 @@ export const baseFetch = async (
         trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY,
     },
   }).then((x) => x.json() as Object)
-  result = { ok: true, ...result.details }
+  result = { ok: result.ok, ...result.details } //TODO: str8 result, nem kell result.details
 
   return result
 }

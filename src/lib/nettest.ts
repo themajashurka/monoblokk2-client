@@ -16,7 +16,7 @@ export class Nettest {
   nextMeasurement: Date | undefined
   lastMeasurement: Date | undefined
 
-  public get speedtestBinaryPath() {
+  private get speedtestBinaryPath() {
     const speedtestBinaryDir = this.trayMenu.dev
       ? 'speedtest_binary'
       : path.join(process.resourcesPath, 'speedtest_binary')
@@ -45,7 +45,7 @@ export class Nettest {
       exec(
         this.speedtestBinaryPath + ' --format json-pretty',
         (error, stdout, stderr) => {
-          if (error || stderr) rej((error ?? stderr).toString())
+          if (!stdout) rej((error ?? stderr).toString())
           else {
             const results = JSON.parse(stdout)
             this.basicResults = {

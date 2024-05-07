@@ -30,7 +30,16 @@ export const setShiftState =
           )
         )
       } else {
-        res.send('kaki')
+        res.redirect(
+          baseRedirectUrl(
+            '/schedule/' + state.toLocaleLowerCase(),
+            {
+              confirmed: true,
+              notReady: true,
+            },
+            trayMenu.dev
+          )
+        )
       }
     })
   }
