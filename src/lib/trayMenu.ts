@@ -56,8 +56,10 @@ export class TrayMenu {
     this.showPasscodeDialog = process.env.BYPASS_SERVER_COMMUNICATION
       ? false
       : await this.settings.get()
+
     this.tray = new Tray(nativeImage.createFromPath('./M.png'))
     this.tray.setToolTip('Monoblokk kliens')
+
     if (!process.env.BYPASS_SERVER_COMMUNICATION) {
       const ipMac = this.settings.getMacIp()
       await baseFetch(

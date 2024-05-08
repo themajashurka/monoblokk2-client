@@ -83,6 +83,17 @@ export class Settings {
     }
   }
 
+  getImported = async (env: Env) => {
+    const settings = await baseFetch(
+      this.getMacIp().mac,
+      '/api/external/local-client/get-settings',
+      {},
+      this.trayMenu
+    )
+
+    return settings
+  }
+
   get = async (): Promise<boolean> => {
     let showPasscodeDialog: boolean = true
     try {
@@ -93,21 +104,14 @@ export class Settings {
       if (!env) {
         return showPasscodeDialog
       }
-
-      const settings = await baseFetch(
-        this.getMacIp().mac,
-        '/api/external/local-client/get-settings',
-        {},
-        this.trayMenu
-      )
-
-      this.imported = settings
       await this.getApiKey(env)
+
+      this.imported = await this.getImported(env)
       this.syncImported()
       await Settings.writeSettings({
         passcode: this.trayMenu.passode,
         locationName: this.trayMenu.locationName,
-        ...settings,
+        ...this.imported,
       })
       showPasscodeDialog = false
       return showPasscodeDialog
@@ -136,11 +140,11 @@ export class Settings {
         }
       })
     }
-    if (this.imported.cctvs) {
-      this.trayMenu.cctv.setCameraLogins(this.imported.cctvs)
-    }
     if (this.imported.webrtcPort) {
       this.trayMenu.cctv.port = this.imported.webrtcPort
+    }
+    if (this.imported.cctvs) {
+      this.trayMenu.cctv.setCameraLogins(this.imported.cctvs)
     }
   }
 }

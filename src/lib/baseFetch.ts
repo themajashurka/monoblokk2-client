@@ -11,6 +11,8 @@ export const baseFetch = async (
   body: { [key: string]: any },
   trayMenu: TrayMenu
 ) => {
+  const apiKey =
+    trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY
   const url = baseUrl(trayMenu.dev) + pathname
   let result: Object
 
@@ -21,11 +23,16 @@ export const baseFetch = async (
       deviceId,
     }),
     headers: {
-      'Monoblokk-Api-Key':
-        trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY,
+      'Monoblokk-Api-Key': apiKey,
     },
   }).then((x) => x.json() as Object)
   result = { ok: result.ok, ...result.details } //TODO: str8 result, nem kell result.details
+
+  if (result && !result.ok) {
+    console.error(apiKey, '-> result was NOT ok for ->', pathname, result)
+  } else {
+    console.log(apiKey, '-> result ok at ->', pathname, result)
+  }
 
   return result
 }
