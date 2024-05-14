@@ -71,6 +71,7 @@ export class TrayMenu {
       if (!this.dev) this.nettest.beginTesting()
     }
     this.cctv.startService()
+    this.beginHeartbeat()
   }
 
   make = async () => {
@@ -283,5 +284,18 @@ export class TrayMenu {
     await this.settings.getApiKey(env)
     this.showPasscodeDialog = await this.settings.get()
     this.make()
+  }
+
+  beginHeartbeat = async () => {
+    setInterval(async () => {
+      await baseFetch(
+        this.settings.getMacIp().mac,
+        '/api/external/local-client/heartbeat',
+        {
+          version: app.getVersion(),
+        },
+        this
+      )
+    }, (this.dev ? 1 : 60) * 1000)
   }
 }
