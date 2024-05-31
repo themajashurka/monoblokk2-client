@@ -27,6 +27,10 @@ console.error = log.error
 console.info = log.info
 log.eventLogger.startLogging()
 
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+}
+
 const trayMenu = new TrayMenu(dev)
 
 usb.on('attach', () => {
@@ -86,20 +90,6 @@ app.on('ready', async () => {
   endpoint.setShiftPresent(express, trayMenu)
   endpoint.setShiftLeft(express, trayMenu)
   endpoint.getLocationName(express, trayMenu)
-
-  /* const clearLastLine = () => {
-    process.stdout.moveCursor(0, -1); // up one line
-    process.stdout.clearLine(1); // from cursor to end
-  };
-
-  import tty from 'node:tty'
-
-  const ws = new tty.WriteStream(0);
-  for (let i = 0; i < 10; i++) {
-    clearLastLine();
-    console.log("------------" + i + "--------------");
-    await new Promise((res) => setTimeout(() => res(""), 100));
-  } */
 
   express.listen(3000)
 })
