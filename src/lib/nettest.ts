@@ -45,7 +45,7 @@ export class Nettest {
       exec(
         this.speedtestBinaryPath + ' --format json-pretty',
         (error, stdout, stderr) => {
-          if (!stdout) rej((error ?? stderr).toString())
+          if (!stdout || error || stderr) rej((error ?? stderr).toString())
           else {
             const results = JSON.parse(stdout)
             this.basicResults = {
