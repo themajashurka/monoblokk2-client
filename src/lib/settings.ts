@@ -4,6 +4,8 @@ import os from 'os'
 import fs from 'fs/promises'
 import type { PrinterObj } from './printer'
 import type { CCTVObj } from './cctv'
+import path from 'path'
+import { app } from 'electron'
 
 type Env = {
   locationName: string
@@ -24,7 +26,7 @@ export class Settings {
     this.trayMenu = trayMenu
   }
 
-  static settingsPath = './settings.json'
+  static settingsPath = path.join(app.getPath('userData'), 'settings.json')
 
   getMacIp = () => {
     const data = Object.entries(os.networkInterfaces())

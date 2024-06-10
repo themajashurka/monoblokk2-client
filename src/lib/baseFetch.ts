@@ -14,21 +14,25 @@ export const baseFetch = async (
   const apiKey =
     trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY
   const url = baseUrl(trayMenu.dev) + pathname
-  let result: Object
 
-  result = await fetch(url, {
-    method: 'post',
-    body: JSON.stringify({
-      ...body,
-      deviceId,
-    }),
-    headers: {
-      'Monoblokk-Api-Key': apiKey,
-    },
-  }).then((x) => x.json() as Object)
-  result = { ok: result.ok, ...result.details } //TODO: str8 result, nem kell result.details
+  let result: Object = {}
+  try {
+    result = await fetch(url, {
+      method: 'post',
+      body: JSON.stringify({
+        ...body,
+        deviceId,
+      }),
+      headers: {
+        'Monoblokk-Api-Key': apiKey,
+      },
+    }).then((x) => x.json() as Object)
+    result = { ok: result.ok, ...result.details } //TODO: str8 result, nem kell result.details
+  } catch (error) {
+    result.ok = false
+  }
 
-  if (result && !result.ok) {
+  if (!result.ok) {
     console.error(apiKey, '-> result was NOT ok for ->', pathname, result)
   } else {
     console.log(apiKey, '-> result ok at ->', pathname, result)
