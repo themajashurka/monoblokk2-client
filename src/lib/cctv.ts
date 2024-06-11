@@ -38,9 +38,7 @@ export class CCTV {
     const templateConfigPath = this.trayMenu.dev
       ? 'mediamtx_template.yml'
       : path.join(process.resourcesPath, 'mediamtx_template.yml')
-    const configPath = this.trayMenu.dev
-      ? 'mediamtx.yml'
-      : path.join(process.resourcesPath, 'mediamtx.yml')
+    const configPath = 'mediamtx.yml'
 
     const config = await fs.readFile(templateConfigPath, { encoding: 'utf8' })
 
