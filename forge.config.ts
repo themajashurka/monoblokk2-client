@@ -17,6 +17,7 @@ const config: ForgeConfig = {
       'speedtest_binary',
       'mediamtx_binary',
       'print_test.pdf',
+      'mediamtx_template.yml',
     ],
   },
   rebuildConfig: {},
