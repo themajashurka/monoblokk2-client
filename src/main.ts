@@ -2,7 +2,7 @@ import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
 })
-import { app, BrowserWindow, Tray } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import _express from 'express'
 import cookieParser from 'cookie-parser'

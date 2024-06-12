@@ -3,6 +3,7 @@ import path from 'path'
 import { TrayMenu } from './trayMenu'
 const _fkill = import('fkill').then((x) => x.default)
 import fs from 'fs/promises'
+import { app } from 'electron'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 
@@ -42,29 +43,42 @@ export class CCTV {
 
     const config = await fs.readFile(templateConfigPath, { encoding: 'utf8' })
 
-    let configArr: string[] = []
-    for (const line of ['paths:', '#webrtcAddress:'] as const) {
-      configArr = config.split('\n')
+    let configArr: string[] = config.split('\n')
+
+    for (const line of [
+      'paths:',
+      '#webrtcAddress:',
+      '  #recordPath:',
+    ] as const) {
       const insertionIndex = configArr.findIndex((x) => x === line)
 
-      let value: string = ''
+      let value: string[] = ['']
       switch (line) {
         case 'paths:':
           value = this.cameraLogins
             .map((cl) => {
               return [
                 `  ${cl.username}:`,
-                `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/${cl.username}`,
-              ].join('\n')
+                `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
+              ]
             })
-            .join('\n')
+            .flat()
           break
         case '#webrtcAddress:':
-          value = `webrtcAddress: :${this.port}`
+          value = [`webrtcAddress: :${this.port}`]
+          break
+        case '  #recordPath:':
+          value = [
+            `  recordPath: ${app.getPath(
+              'userData'
+            )}/recordings/%path/%Y-%m-%d_%H-%M-%S-%f`,
+          ]
           break
       }
 
-      configArr.splice(insertionIndex + 1, 0, value)
+      console.log({ insertionIndex, value, length: configArr.length })
+
+      configArr.splice(insertionIndex + 1, 0, value.join('\n'))
     }
 
     await fs.writeFile(configPath, configArr.join('\n'))
