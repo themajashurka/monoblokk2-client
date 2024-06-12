@@ -92,23 +92,35 @@ export class CCTV {
           pid = await new Promise((res, rej) => {
             exec('pgrep mediamtx', (error, stdout, stderr) => {
               if (stdout) res(stdout)
-              //if (error) rej(error)
+              if (error) rej(error)
               if (stderr) rej(stderr)
             })
           })
+          if (pid!) {
+            await fkill(Number(pid))
+            console.log('killed mediamtx on:', pid)
+          }
         } catch (error) {
           console.error(error)
         }
         break
       case 'win32':
+        try {
+          await new Promise((res, rej) => {
+            exec(
+              'taskkill /f /t /im mediamtx_win32.exe',
+              (error, stdout, stderr) => {
+                if (stdout) res(stdout)
+                if (error) rej(error)
+                if (stderr) rej(stderr)
+              }
+            )
+          })
+        } catch (error) {}
         break
 
       default:
         break
-    }
-    if (pid!) {
-      await fkill(Number(pid))
-      console.log('killed mediamtx on:', pid)
     }
   }
 }
