@@ -39,7 +39,7 @@ export class CCTV {
     const templateConfigPath = this.trayMenu.dev
       ? 'mediamtx_template.yml'
       : path.join(process.resourcesPath, 'mediamtx_template.yml')
-    const configPath = 'mediamtx.yml'
+    const configPath = path.join(app.getAppPath(), 'mediamtx.yml')
 
     const config = await fs.readFile(templateConfigPath, { encoding: 'utf8' })
 
@@ -76,7 +76,12 @@ export class CCTV {
           break
       }
 
-      console.log({ insertionIndex, value, length: configArr.length })
+      console.log({
+        resoucesPath: process.resourcesPath,
+        insertionIndex,
+        value,
+        length: configArr.length,
+      })
 
       configArr.splice(insertionIndex + 1, 0, value.join('\n'))
     }

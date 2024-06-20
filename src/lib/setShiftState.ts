@@ -5,9 +5,9 @@ import { TrayMenu } from './trayMenu'
 export const setShiftState =
   (state: 'Present' | 'Left') => (express: Express, trayMenu: TrayMenu) => {
     express.get('/shift/' + state, async function (req, res) {
-      const deviceId = new URL('http://localhost/' + req.url).searchParams.get(
-        'deviceId'
-      )!
+      const searchParams = new URL('http://localhost/' + req.url).searchParams
+      const deviceId = (searchParams.get('deviceId') ??
+        searchParams.get('userId'))!
 
       const result = await baseFetch(
         deviceId,
