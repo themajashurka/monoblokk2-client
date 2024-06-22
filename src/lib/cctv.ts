@@ -4,6 +4,7 @@ import { TrayMenu } from './trayMenu'
 const _fkill = import('fkill').then((x) => x.default)
 import fs from 'fs/promises'
 import { app } from 'electron'
+import { EOL } from 'node:os'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 
@@ -43,7 +44,7 @@ export class CCTV {
 
     const config = await fs.readFile(templateConfigPath, { encoding: 'utf8' })
 
-    let configArr: string[] = config.split('\n')
+    let configArr: string[] = config.split(EOL)
 
     for (const line of [
       'paths:',

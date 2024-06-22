@@ -57,7 +57,11 @@ export class TrayMenu {
       ? false
       : await this.settings.get()
 
-    this.tray = new Tray(nativeImage.createFromPath('./M.png'))
+    this.tray = new Tray(
+      nativeImage.createFromPath(
+        this.dev ? 'M.png' : path.join(process.resourcesPath, 'M.png')
+      )
+    )
     this.tray.setToolTip('Monoblokk kliens')
 
     if (!process.env.BYPASS_SERVER_COMMUNICATION) {
