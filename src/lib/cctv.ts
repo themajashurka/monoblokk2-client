@@ -77,7 +77,7 @@ export class CCTV {
       }
 
       console.log({
-        resoucesPath: process.resourcesPath,
+        templateConfigPath,
         insertionIndex,
         value,
         length: configArr.length,
