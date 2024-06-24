@@ -28,18 +28,35 @@ export class Settings {
 
   static settingsPath = path.join(app.getPath('userData'), 'settings.json')
 
-  getMacIp = () => {
-    const data = Object.entries(os.networkInterfaces())
-      .map((x) => x[1]!)
-      .flat()
-      .filter((x) => x.address.startsWith('192.168'))[0]!
+  getMacIp = async () => {
+    const promise = () =>
+      new Promise<{ mac: string; ip: string }>((res, rej) => {
+        const data = Object.entries(os.networkInterfaces())
+          .map((x) => x[1]!)
+          .flat()
+          .filter((x) => x.address.startsWith('192.168'))[0]!
 
-    try {
-      return { mac: data.mac, ip: data.address }
-    } catch (error) {
-      if (this.trayMenu.dev) return { mac: '00:00:00:00', ip: '0.0.0.0' }
-      else throw Error('app needs to be a part of a local network')
+        try {
+          return res({ mac: data.mac, ip: data.address })
+        } catch (error) {
+          console.error(
+            'app needs to be a part of a local network, trying again...'
+          )
+          rej()
+        }
+      })
+
+    const attempt = async () => {
+      try {
+        return await promise()
+      } catch (e) {
+        return new Promise<Awaited<ReturnType<typeof promise>>>((res) => {
+          setTimeout(() => res(attempt()), 1000)
+        })
+      }
     }
+
+    return await attempt()
   }
 
   static writeSettings = async (data: any) => {
@@ -65,7 +82,9 @@ export class Settings {
   getApiKey = async (env: Env) => {
     try {
       const settings = await baseFetch(
-        this.getMacIp().mac,
+        (
+          await this.getMacIp()
+        ).mac,
         '/api/external/local-client/link-location',
         {
           locationName: env.locationName,
@@ -87,7 +106,9 @@ export class Settings {
 
   getImported = async (env: Env) => {
     const settings = await baseFetch(
-      this.getMacIp().mac,
+      (
+        await this.getMacIp()
+      ).mac,
       '/api/external/local-client/get-settings',
       {},
       this.trayMenu
@@ -124,7 +145,9 @@ export class Settings {
 
   save = async (settingsData: Partial<SettingsData>) => {
     await baseFetch(
-      this.getMacIp().mac,
+      (
+        await this.getMacIp()
+      ).mac,
       '/api/external/local-client/set-settings',
       settingsData,
       this.trayMenu

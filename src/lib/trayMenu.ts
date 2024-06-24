@@ -65,7 +65,7 @@ export class TrayMenu {
     this.tray.setToolTip('Monoblokk kliens')
 
     if (!process.env.BYPASS_SERVER_COMMUNICATION) {
-      const ipMac = this.settings.getMacIp()
+      const ipMac = await this.settings.getMacIp()
       await baseFetch(
         ipMac.mac,
         '/api/external/local-client/inform-ip',
@@ -293,7 +293,9 @@ export class TrayMenu {
   beginHeartbeat = async () => {
     setInterval(async () => {
       await baseFetch(
-        this.settings.getMacIp().mac,
+        (
+          await this.settings.getMacIp()
+        ).mac,
         '/api/external/local-client/heartbeat',
         {
           version: app.getVersion(),

@@ -77,13 +77,6 @@ export class CCTV {
           break
       }
 
-      console.log({
-        templateConfigPath,
-        insertionIndex,
-        value,
-        length: configArr.length,
-      })
-
       configArr.splice(insertionIndex + 1, 0, value.join('\n'))
     }
 

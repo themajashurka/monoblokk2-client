@@ -86,7 +86,9 @@ export class Nettest {
 
   submitTestResults = async (results: any) => {
     await baseFetch(
-      this.trayMenu.settings.getMacIp().mac,
+      (
+        await this.trayMenu.settings.getMacIp()
+      ).mac,
       '/api/external/local-client/upload-speedtest-results',
       { results },
       this.trayMenu
