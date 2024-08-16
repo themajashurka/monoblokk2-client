@@ -3,6 +3,11 @@ import { TrayMenu } from './trayMenu'
 import { exec } from 'child_process'
 import path from 'path'
 
+export type NettestSettings = {
+  intervalInMin: number
+  randomnessInMin: number
+}
+
 export class Nettest {
   trayMenu: TrayMenu
   inProgress = false
@@ -15,6 +20,7 @@ export class Nettest {
     | undefined
   nextMeasurement: Date | undefined
   lastMeasurement: Date | undefined
+  settings: NettestSettings | undefined
 
   private get speedtestBinaryPath() {
     const speedtestBinaryDir = this.trayMenu.dev
@@ -96,8 +102,10 @@ export class Nettest {
   }
 
   beginTesting = () => {
-    const interval = (this.trayMenu.dev ? 5 : 30) * 60 * 1000 //minutes
-    const randomness = (this.trayMenu.dev ? 0 : 1) * 60 * 1000 //minutes
+    const interval =
+      (this.trayMenu.dev ? 5 : this.settings?.intervalInMin ?? 60) * 60 * 1000
+    const randomness =
+      (this.trayMenu.dev ? 0 : this.settings?.randomnessInMin ?? 5) * 60 * 1000
 
     const nextInterval = () => {
       const _interval = interval + (Math.random() * randomness - randomness / 2)

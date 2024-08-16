@@ -7,11 +7,11 @@ import { baseFetch } from './baseFetch'
 import { Nettest } from './nettest'
 import { CCTV } from './cctv'
 
-type Users = { ip: string; name: string }[]
+export type User = string
 
 export class TrayMenu {
   printers: Printer[]
-  private users: Users
+  private users: User[]
   private refreshPrinterInterval = 5000
   apiKey: string = process.env.APIKEY_EXTERNAL_SCHEDULE!
   passode!: string
@@ -28,8 +28,13 @@ export class TrayMenu {
     this.make()
   }
 
-  public set setUsers(u: Users) {
-    this.users = u
+  public set addUsers(u: User[]) {
+    this.users = Array.from(new Set([...this.users, ...u]))
+    this.make()
+  }
+
+  public set deleteUser(user: User) {
+    this.users = this.users.filter((u) => u !== user)
     this.make()
   }
 
@@ -141,9 +146,7 @@ export class TrayMenu {
     const usersMenuItem = new MenuItem({
       type: 'submenu',
       label: 'Felhasználók',
-      submenu: [
-        ...this.users.map((x) => ({ label: `IP: ${x.ip} MAC: ${x.name}` })),
-      ],
+      submenu: [...this.users.map((user) => ({ label: user }))],
     })
     const acquireApiKey = this.showPasscodeDialog
       ? [

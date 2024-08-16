@@ -1,4 +1,4 @@
-import { TrayMenu } from './trayMenu'
+import { TrayMenu, User } from './trayMenu'
 import { baseFetch } from './baseFetch'
 import os from 'os'
 import fs from 'fs/promises'
@@ -6,6 +6,9 @@ import type { PrinterObj } from './printer'
 import type { CCTVObj } from './cctv'
 import path from 'path'
 import { app } from 'electron'
+import { NettestSettings } from './nettest'
+let ipIsPrivate: (x: string) => boolean | undefined
+import('private-ip').then((x) => (ipIsPrivate = x.default))
 
 type Env = {
   locationName: string
@@ -16,6 +19,8 @@ type SettingsData = {
   printers: PrinterObj[]
   cctvs: CCTVObj[]
   webrtcPort: number
+  users: User[]
+  nettestSettings: NettestSettings
 }
 
 export class Settings {
@@ -31,16 +36,18 @@ export class Settings {
   getMacIp = async () => {
     const promise = () =>
       new Promise<{ mac: string; ip: string }>((res, rej) => {
-        const data = Object.entries(os.networkInterfaces())
+        const allip = Object.entries(os.networkInterfaces())
           .map((x) => x[1]!)
           .flat()
-          .filter((x) => x.address.startsWith('192.168'))[0]!
+        const localip = allip.filter((x) => ipIsPrivate(x.address))[0]!
 
         try {
-          return res({ mac: data.mac, ip: data.address })
+          return res({ mac: localip.mac, ip: localip.address })
         } catch (error) {
           console.error(
-            'app needs to be a part of a local network, trying again...'
+            'app needs to be a part of a local network, trying again...',
+            'ip-s:',
+            allip.map((i) => i.address)
           )
           rej()
         }
@@ -170,6 +177,12 @@ export class Settings {
     }
     if (this.imported.cctvs) {
       this.trayMenu.cctv.setCameraLogins(this.imported.cctvs)
+    }
+    if (this.imported.users) {
+      this.trayMenu.addUsers = this.imported.users
+    }
+    if (this.imported.nettestSettings) {
+      this.trayMenu.nettest.settings = this.imported.nettestSettings
     }
   }
 }

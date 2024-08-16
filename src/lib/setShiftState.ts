@@ -7,7 +7,8 @@ export const setShiftState =
     express.get('/shift/' + state, async function (req, res) {
       const searchParams = new URL('http://localhost/' + req.url).searchParams
       const deviceId = (searchParams.get('deviceId') ??
-        searchParams.get('userId'))!
+        searchParams.get('session'))!
+      const noRedirect = searchParams.get('noRedirect')
 
       const result = await baseFetch(
         deviceId,
@@ -15,31 +16,43 @@ export const setShiftState =
         {},
         trayMenu
       )
-      console.log('result', result, trayMenu.apiKey)
       if (result.ok) {
-        //trayMenu.setUsers = [...trayMenu.getUsers, result.users]
-        res.redirect(
-          baseRedirectUrl(
-            '/schedule/' + state.toLocaleLowerCase(),
-            {
-              apiKey: result.apiKey,
-              shiftId: result.shiftId,
-              confirmed: true,
-            },
-            trayMenu.dev
+        if (state === 'Present') {
+          trayMenu.addUsers = result.users.map((u: any) => u.fullName)
+        } else {
+          trayMenu.deleteUser = result.users[0].fullName
+        }
+
+        if (noRedirect) {
+          res.json({ users: result.users })
+        } else {
+          res.redirect(
+            baseRedirectUrl(
+              '/schedule/' + state.toLocaleLowerCase(),
+              {
+                apiKey: result.apiKey,
+                shiftId: result.shiftId,
+                confirmed: true,
+              },
+              trayMenu.dev
+            )
           )
-        )
+        }
       } else {
-        res.redirect(
-          baseRedirectUrl(
-            '/schedule/' + state.toLocaleLowerCase(),
-            {
-              confirmed: true,
-              notReady: true,
-            },
-            trayMenu.dev
+        if (noRedirect) {
+          res.json({ users: result.users })
+        } else {
+          res.redirect(
+            baseRedirectUrl(
+              '/schedule/' + state.toLocaleLowerCase(),
+              {
+                confirmed: true,
+                notReady: true,
+              },
+              trayMenu.dev
+            )
           )
-        )
+        }
       }
     })
   }
