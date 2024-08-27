@@ -39,9 +39,12 @@ export class Settings {
         const allip = Object.entries(os.networkInterfaces())
           .map((x) => x[1]!)
           .flat()
-        console.log(allip)
         const localip = allip.filter(
-          (x) => ipIsPrivate(x.address) && !x.internal && x.family === 'IPv4'
+          (x) =>
+            ipIsPrivate(x.address) &&
+            !x.internal &&
+            x.family === 'IPv4' &&
+            x.address.split('.')[0] !== '10'
         )[0]!
 
         try {
