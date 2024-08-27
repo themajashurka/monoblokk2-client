@@ -39,7 +39,10 @@ export class Settings {
         const allip = Object.entries(os.networkInterfaces())
           .map((x) => x[1]!)
           .flat()
-        const localip = allip.filter((x) => ipIsPrivate(x.address))[0]!
+        console.log(allip)
+        const localip = allip.filter(
+          (x) => ipIsPrivate(x.address) && !x.internal && x.family === 'IPv4'
+        )[0]!
 
         try {
           return res({ mac: localip.mac, ip: localip.address })
