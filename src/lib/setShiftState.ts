@@ -17,10 +17,14 @@ export const setShiftState =
         trayMenu
       )
       if (result.ok) {
-        if (state === 'Present') {
-          trayMenu.addUsers = result.users.map((u: any) => u.fullName)
-        } else {
-          trayMenu.deleteUser = result.users[0].fullName
+        try {
+          if (state === 'Present') {
+            trayMenu.addUsers = result.users.map((u: any) => u.fullName)
+          } else {
+            trayMenu.deleteUser = result.users[0].fullName
+          }
+        } catch (error) {
+          console.error(error)
         }
 
         if (noRedirect) {

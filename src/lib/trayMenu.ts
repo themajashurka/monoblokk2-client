@@ -11,7 +11,7 @@ export type User = string
 
 export class TrayMenu {
   printers: Printer[]
-  private users: User[]
+  private users: User[] = []
   private refreshPrinterInterval = 5000
   apiKey: string = process.env.APIKEY_EXTERNAL_SCHEDULE!
   passode!: string
@@ -51,7 +51,6 @@ export class TrayMenu {
   constructor(dev: boolean) {
     this.dev = dev
     this.printers = Printer.getPrinters(this)
-    this.users = []
     this.settings = new Settings(this)
     this.nettest = new Nettest(this)
     this.cctv = new CCTV(this)
@@ -305,6 +304,6 @@ export class TrayMenu {
         },
         this
       )
-    }, (this.dev ? 1 : 60) * 1000)
+    }, (this.dev ? 10 : 60) * 1000)
   }
 }
