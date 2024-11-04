@@ -106,7 +106,7 @@ export class Settings {
     )
     if (!settings.ok) throw new Error('unsuccessful linking')
 
-    this.trayMenu.apiKey = settings.apiKey
+    this.trayMenu.apiKey = settings.details.apiKey
     this.trayMenu.locationName = env.locationName
     this.trayMenu.passode = env.passcode
 
@@ -123,7 +123,7 @@ export class Settings {
       this.trayMenu
     )
 
-    return settings
+    return settings.details
   }
 
   get = async (): Promise<boolean> => {
@@ -164,6 +164,7 @@ export class Settings {
   }
 
   syncImported = () => {
+    console.log('imported', this.imported)
     if (this.imported.printers) {
       this.imported.printers.map((p) => {
         const currentPrinter = this.trayMenu.printers.find(

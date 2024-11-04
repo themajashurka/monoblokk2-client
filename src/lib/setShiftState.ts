@@ -19,9 +19,9 @@ export const setShiftState =
       if (result.ok) {
         try {
           if (state === 'Present') {
-            trayMenu.addUsers = result.users.map((u: any) => u.fullName)
+            trayMenu.addUsers = result.details.users.map((u: any) => u.fullName)
           } else {
-            trayMenu.deleteUser = result.users[0].fullName
+            trayMenu.deleteUser = result.details.users[0].fullName
           }
         } catch (error) {
           console.error(error)
