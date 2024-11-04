@@ -93,28 +93,24 @@ export class Settings {
   }
 
   getApiKey = async (env: Env) => {
-    try {
-      const settings = await baseFetch(
-        (
-          await this.getMacIp()
-        ).mac,
-        '/api/external/local-client/link-location',
-        {
-          locationName: env.locationName,
-          passcode: env.passcode,
-        },
-        this.trayMenu
-      )
-      if (!settings.ok) throw new Error('unsuccessful linking')
+    const ip = await this.getMacIp()
+    console.log('getApiKey with this ip ->', ip)
+    const settings = await baseFetch(
+      ip.mac,
+      '/api/external/local-client/link-location',
+      {
+        locationName: env.locationName,
+        passcode: env.passcode,
+      },
+      this.trayMenu
+    )
+    if (!settings.ok) throw new Error('unsuccessful linking')
 
-      this.trayMenu.apiKey = settings.apiKey
-      this.trayMenu.locationName = env.locationName
-      this.trayMenu.passode = env.passcode
+    this.trayMenu.apiKey = settings.apiKey
+    this.trayMenu.locationName = env.locationName
+    this.trayMenu.passode = env.passcode
 
-      await Settings.writeSettings(env)
-    } catch (error) {
-      console.error(error)
-    }
+    await Settings.writeSettings(env)
   }
 
   getImported = async (env: Env) => {

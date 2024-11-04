@@ -21,6 +21,7 @@ export class TrayMenu {
   settings: Settings
   nettest: Nettest
   cctv: CCTV
+  heartbeatCount = { count: 0, last: new Date() }
 
   public set setPrinters(printers: Printer[]) {
     this.printers = printers
@@ -57,6 +58,7 @@ export class TrayMenu {
   }
 
   init = async () => {
+    console.log('START INITING')
     this.showPasscodeDialog = process.env.BYPASS_SERVER_COMMUNICATION
       ? false
       : await this.settings.get()
@@ -78,6 +80,8 @@ export class TrayMenu {
       )
       if (!this.dev) this.nettest.beginTesting()
     }
+    console.log('INIT ENDED')
+    ///
     this.cctv.startService()
     this.beginHeartbeat()
   }
@@ -156,6 +160,16 @@ export class TrayMenu {
           { label: 'json -> passcode, locationName', enabled: false },
         ]
       : []
+    const heartbeats = [
+      {
+        label: `  ${this.heartbeatCount.count}db szinkronizálás`,
+        enabled: false,
+      },
+      {
+        label: `  Utoljára: ${Nettest.parseDate(this.heartbeatCount.last)}`,
+        enabled: false,
+      },
+    ]
     const locationName = this.locationName
       ? [
           {
@@ -253,6 +267,7 @@ export class TrayMenu {
       { type: 'separator' },
       ...acquireApiKey,
       ...locationName,
+      ...heartbeats,
       { type: 'separator' },
       quit,
       { label: 'v' + app.getVersion(), enabled: false },
@@ -293,17 +308,19 @@ export class TrayMenu {
   }
 
   beginHeartbeat = async () => {
-    setInterval(async () => {
-      await baseFetch(
-        (
-          await this.settings.getMacIp()
-        ).mac,
-        '/api/external/local-client/heartbeat',
-        {
-          version: app.getVersion(),
-        },
-        this
-      )
-    }, (this.dev ? 10 : 60) * 1000)
+    await baseFetch(
+      (
+        await this.settings.getMacIp()
+      ).mac,
+      '/api/external/local-client/heartbeat',
+      {
+        version: app.getVersion(),
+      },
+      this
+    )
+    this.heartbeatCount.count++
+    this.heartbeatCount.last = new Date()
+    this.make()
+    setTimeout(this.beginHeartbeat, (this.dev ? 10 : 60) * 1000)
   }
 }

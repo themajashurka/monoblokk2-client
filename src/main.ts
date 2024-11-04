@@ -101,6 +101,7 @@ app.on('ready', async () => {
   }
 
   endpoint.welcome(express)
+  endpoint.alive(express)
   endpoint.setShiftPresent(express, trayMenu)
   endpoint.setShiftLeft(express, trayMenu)
   endpoint.getLocationName(express, trayMenu)

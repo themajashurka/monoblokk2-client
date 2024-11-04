@@ -616,10 +616,7 @@ pathDefaults:
 # for example "~^(test1|test2)$" will match both "test1" and "test2",
 # for example "~^prefix" will match all paths that start with "prefix".
 paths:
-  admin_1:
-    source: rtsp://admin_1:1234@192.168.1.2:554/stream1
-  admin_2:
-    source: rtsp://admin_2:1234@192.168.1.3:554/stream1
+
   #proxied:
   #   source: rtsp://user:pass@host:port/path
   # example:

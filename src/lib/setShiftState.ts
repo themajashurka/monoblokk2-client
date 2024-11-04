@@ -28,7 +28,7 @@ export const setShiftState =
         }
 
         if (noRedirect) {
-          res.json({ users: result.users })
+          res.json(result)
         } else {
           res.redirect(
             baseRedirectUrl(
@@ -44,7 +44,7 @@ export const setShiftState =
         }
       } else {
         if (noRedirect) {
-          res.json({ users: result.users })
+          res.json(result)
         } else {
           res.redirect(
             baseRedirectUrl(
