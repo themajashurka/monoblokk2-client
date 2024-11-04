@@ -9,11 +9,12 @@ export const setShiftState =
       const deviceId = (searchParams.get('deviceId') ??
         searchParams.get('session'))!
       const noRedirect = searchParams.get('noRedirect')
+      const date = searchParams.get('date') ?? Date.now()
 
       const result = await baseFetch(
         deviceId,
         '/api/external/local-client/schedule/' + state.toLowerCase(),
-        {},
+        { date },
         trayMenu
       )
       if (result.ok) {
