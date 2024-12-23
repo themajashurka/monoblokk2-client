@@ -131,6 +131,23 @@ export class CCTV {
       )
       const camera = req.query.camera as string | null
       if (!_path || !camera) return
+
+      try {
+        await fs.mkdir(
+          path.resolve(
+            _path,
+            '..',
+            '..',
+            '..',
+            'recordings_compressed',
+            camera
+          ),
+          { recursive: true }
+        )
+      } catch (error) {
+        console.error(error)
+      }
+
       const [inPath, outPath] = [
         `${_path}${CCTV.inExt}`,
         `${path.resolve(
@@ -149,11 +166,6 @@ export class CCTV {
           path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
         ) + CCTV.outExt
 
-      try {
-        await fs.mkdir(path.dirname(outPath), { recursive: true })
-      } catch (error) {
-        console.error(error)
-      }
       const command =
         // prettier-ignore
         `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=1920:-2, fps=10" -b:v 400k -threads 1 -preset veryfast ${outPath}`
@@ -162,6 +174,7 @@ export class CCTV {
         if (stderr) console.error(stderr)
         await fs.rename(outPath, cleanPath)
         console.log('compressing done! ->', path.basename(_path))
+        res.json({ compressing: 'done' })
         await CCTV.upload(camera, cleanPath, trayMenu)
         await fs.unlink(cleanPath)
       })
