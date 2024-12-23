@@ -93,3 +93,13 @@ out/
 
 settings.json
 passcode.json
+
+ffmpeg_binary
+mediamtx_binary
+rclone_binary
+speedtest_binary
+
+ffmpeg_binary_win32
+mediamtx_binary_win32
+rclone_binary_win32
+speedtest_binary_win32

@@ -3,6 +3,7 @@ import { getLocationName } from './getLocationName'
 import { setShiftState } from './setShiftState'
 import { welcome } from './welcome'
 import type { Express } from 'express'
+import { CCTV } from './cctv'
 
 export const endpoint = {
   welcome,
@@ -14,4 +15,5 @@ export const endpoint = {
   setShiftPresent: setShiftState('Present'),
   setShiftLeft: setShiftState('Left'),
   getLocationName: getLocationName,
+  compressNewRecordings: CCTV.compressNewRecordings,
 }

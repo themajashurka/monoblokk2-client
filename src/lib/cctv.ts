@@ -5,6 +5,8 @@ const _fkill = import('fkill').then((x) => x.default)
 import fs from 'fs/promises'
 import { app } from 'electron'
 import { EOL } from 'node:os'
+import type { Express } from 'express'
+import { Client } from 'basic-ftp'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 
@@ -15,13 +17,32 @@ export class CCTV {
     password: string
     ip: string
   }[] = []
+  remote: {
+    username: string
+    password: string
+    ip: string
+  }[] = []
   port: number = 8891
+
+  static processingSuffix = '_processing'
+  static inExt = '.ts'
+  static outExt = '.mp4'
 
   private get mediamtxBinaryPath() {
     const mediamtxBinaryDir = this.trayMenu.dev
       ? 'mediamtx_binary'
-      : path.join(process.resourcesPath, 'mediamtx_binary')
+      : path.join(process.resourcesPath, 'mediamtx_binary_win32') //TODO: remove _win32
     const mediamtxBinaryFile = `mediamtx_${process.platform}${
+      process.platform === 'win32' ? '.exe' : ''
+    }` //darwin, linux, win32
+    return path.join(mediamtxBinaryDir, mediamtxBinaryFile)
+  }
+
+  private get ffmpegBinaryPath() {
+    const mediamtxBinaryDir = this.trayMenu.dev
+      ? 'ffmpeg_binary'
+      : path.join(process.resourcesPath, 'ffmpeg_binary_win32') //TODO: remove _win32
+    const mediamtxBinaryFile = `ffmpeg_${process.platform}${
       process.platform === 'win32' ? '.exe' : ''
     }` //darwin, linux, win32
     return path.join(mediamtxBinaryDir, mediamtxBinaryFile)
@@ -37,6 +58,7 @@ export class CCTV {
   }
 
   rewriteConfig = async () => {
+    //mediamtx config
     const templateConfigPath = this.trayMenu.dev
       ? 'mediamtx_template.yml'
       : path.join(process.resourcesPath, 'mediamtx_template.yml')
@@ -61,6 +83,7 @@ export class CCTV {
               return [
                 `  ${cl.username}:`,
                 `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
+                `    runOnRecordSegmentComplete: curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
               ]
             })
             .flat()
@@ -79,21 +102,84 @@ export class CCTV {
 
       configArr.splice(insertionIndex + 1, 0, value.join('\n'))
     }
-
     await fs.writeFile(configPath, configArr.join('\n'))
+
+    //rclone confing
   }
 
   startService = async () => {
-    await new Promise(() => {
-      const { stdout, stderr } = spawn(this.mediamtxBinaryPath, {
-        stdio: 'pipe',
-        detached: true,
+    await Promise.allSettled([
+      new Promise(() => {
+        const { stdout, stderr } = spawn(this.mediamtxBinaryPath, {
+          stdio: 'pipe',
+          detached: true,
+        })
+        stdout.setEncoding('utf8')
+        stderr.setEncoding('utf8')
+        stdout.on('data', (data) => console.log(data))
+        stderr.on('data', (data) => console.log(data))
+      }),
+    ])
+  }
+
+  static compressNewRecordings = (express: Express, trayMenu: TrayMenu) => {
+    express.get('/compressNewRecordings', async (req, res) => {
+      const _path = path.join(
+        path.dirname(req.query.path as string),
+        path.basename(req.query.path as string, CCTV.inExt)
+      )
+      const camera = req.query.camera as string | null
+      if (!_path || !camera) return
+      const [inPath, outPath] = [
+        `${_path}${CCTV.inExt}`,
+        `${path.resolve(
+          _path,
+          '..',
+          '..',
+          '..',
+          'recordings_compressed',
+          camera,
+          path.basename(_path)
+        )}${CCTV.processingSuffix}${CCTV.outExt}`,
+      ]
+      const cleanPath =
+        path.join(
+          path.dirname(outPath),
+          path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
+        ) + CCTV.outExt
+
+      const command =
+        // prettier-ignore
+        `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=1920:-2, fps=10" -b:v 400k -threads 1 -preset veryfast ${outPath}`
+      //console.log('commmmmmmmmmmmmmmmmmmmmand', command, cleanPath)
+      exec(command, async (error, stdout, stderr) => {
+        if (error) console.error(error)
+        if (stderr) console.error(stderr)
+        await fs.rename(outPath, cleanPath)
+        console.log('compressing done! ->', path.basename(_path))
+        await CCTV.upload(camera, cleanPath, trayMenu)
+        await fs.unlink(cleanPath)
       })
-      stdout.setEncoding('utf8')
-      stderr.setEncoding('utf8')
-      stdout.on('data', (data) => console.log(data))
-      stderr.on('data', (data) => console.log(data))
     })
+  }
+
+  static upload = async (camera: string, _path: string, trayMenu: TrayMenu) => {
+    const client = new Client()
+    try {
+      await client.access({
+        host: process.env.FTP_HOST,
+        user: process.env.FTP_USER,
+        password: process.env.FTP_PWD,
+        secure: true,
+        secureOptions: { rejectUnauthorized: !trayMenu.dev },
+      })
+      await client.ensureDir(`/files/${camera}`)
+      await client.uploadFrom(_path, `/files/${camera}/${path.basename(_path)}`)
+      console.log('uploading done! ->', path.basename(_path, CCTV.outExt))
+    } catch (err) {
+      console.log(err)
+    }
+    client.close()
   }
 
   killService = async () => {

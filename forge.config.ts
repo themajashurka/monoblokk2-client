@@ -12,10 +12,21 @@ import fs from 'fs/promises'
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    extraResource: [
+    /* extraResource: [
       '.env',
       'speedtest_binary',
       'mediamtx_binary',
+      'ffmpeg_binary',
+      'rclone_binary',
+      'print_test.pdf',
+      'mediamtx_template.yml',
+    ], */
+    extraResource: [
+      '.env',
+      'speedtest_binary_win32',
+      'mediamtx_binary_win32',
+      'ffmpeg_binary_win32',
+      'rclone_binary_win32',
       'print_test.pdf',
       'mediamtx_template.yml',
     ],

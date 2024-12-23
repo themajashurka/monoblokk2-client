@@ -391,10 +391,10 @@ pathDefaults:
   # Therefore, the part duration is equal to the RPO (recovery point objective).
   recordPartDuration: 1000ms
   # Minimum duration of each segment.
-  recordSegmentDuration: 1h
+  recordSegmentDuration: 5m
   # Delete segments after this timespan.
   # Set to 0s to disable automatic deletion.
-  recordDeleteAfter: 72h
+  recordDeleteAfter: 120h
 
   ###############################################
   # Default path settings -> Publisher source (when source is "publisher")
@@ -616,7 +616,9 @@ pathDefaults:
 # for example "~^(test1|test2)$" will match both "test1" and "test2",
 # for example "~^prefix" will match all paths that start with "prefix".
 paths:
-
+  Junior:
+    source: rtsp://Junior:Junior@192.168.0.157:554/stream1
+    runOnRecordSegmentComplete: curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH
   #proxied:
   #   source: rtsp://user:pass@host:port/path
   # example:
