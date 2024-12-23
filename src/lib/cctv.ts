@@ -6,7 +6,7 @@ import fs from 'fs/promises'
 import { app } from 'electron'
 import { EOL } from 'node:os'
 import type { Express } from 'express'
-import { Client } from 'basic-ftp'
+import Client from 'ssh2-sftp-client'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 
@@ -84,7 +84,7 @@ export class CCTV {
                 `  ${cl.username}:`,
                 `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
                 //prettier-ignore
-                //`    runOnRecordSegmentComplete: ${process.platform === 'win32' ? 'start /B ' : ''}curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
+                `    runOnRecordSegmentComplete: ${process.platform === 'win32' ? 'start /B ' : ''}curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
               ]
             })
             .flat()
@@ -151,14 +151,12 @@ export class CCTV {
 
       try {
         await fs.mkdir(path.dirname(outPath), { recursive: true })
-        console.log(`${camera} dir created`)
       } catch (error) {
-        console.log(`${camera} dir already exists`)
+        console.error(error)
       }
       const command =
         // prettier-ignore
         `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=1920:-2, fps=10" -b:v 400k -threads 1 -preset veryfast ${outPath}`
-      //console.log('commmmmmmmmmmmmmmmmmmmmand', command, cleanPath)
       exec(command, async (error, stdout, stderr) => {
         if (error) console.error(error)
         if (stderr) console.error(stderr)
@@ -171,22 +169,31 @@ export class CCTV {
   }
 
   static upload = async (camera: string, _path: string, trayMenu: TrayMenu) => {
-    const client = new Client()
-    try {
-      await client.access({
-        host: process.env.FTP_HOST,
-        user: process.env.FTP_USER,
-        password: process.env.FTP_PWD,
-        secure: true,
-        secureOptions: { rejectUnauthorized: !trayMenu.dev },
-      })
-      await client.ensureDir(`/files/${camera}`)
-      await client.uploadFrom(_path, `/files/${camera}/${path.basename(_path)}`)
-      console.log('uploading done! ->', path.basename(_path, CCTV.outExt))
-    } catch (err) {
-      console.log(err)
+    const config = {
+      host: process.env.SFTP_HOST,
+      username: process.env.SFTP_USER,
+      password: process.env.SFTP_PWD,
     }
-    client.close()
+
+    let client = new Client()
+
+    let data = await fs.readFile(_path)
+    let remote = `/home/marci/cctv/${camera}/${path.basename(_path)}`
+
+    client
+      .connect(config)
+      .then(() => {
+        return client.mkdir(path.dirname(remote), true)
+      })
+      .then(() => {
+        return client.put(data, remote)
+      })
+      .then(() => {
+        return client.end()
+      })
+      .catch((err) => {
+        console.error(err.message)
+      })
   }
 
   killService = async () => {
