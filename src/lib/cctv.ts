@@ -94,9 +94,9 @@ export class CCTV {
           break
         case '  #recordPath:':
           value = [
-            `  recordPath: ${app.getPath(
-              'userData'
-            )}/recordings/%path/%Y-%m-%d_%H-%M-%S-%f`,
+            `  recordPath: ${app
+              .getPath('userData')
+              .replaceAll('\\', '/')}/recordings/%path/%Y-%m-%d_%H-%M-%S-%f`,
           ]
           break
       }
@@ -125,14 +125,6 @@ export class CCTV {
 
   static compressNewRecordings = (express: Express, trayMenu: TrayMenu) => {
     express.get('/compressNewRecordings', async (req, res) => {
-      console.log(
-        'path',
-        req.query.path,
-        'dirname',
-        path.dirname(req.query.path as string),
-        'basename',
-        path.basename(req.query.path as string, CCTV.inExt)
-      )
       const _path = path.join(
         path.dirname(req.query.path as string),
         path.basename(req.query.path as string, CCTV.inExt)
