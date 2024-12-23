@@ -148,6 +148,12 @@ export class CCTV {
           path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
         ) + CCTV.outExt
 
+      try {
+        await fs.mkdir(path.dirname(outPath), { recursive: true })
+        console.log(`${camera} dir created`)
+      } catch (error) {
+        console.log(`${camera} dir already exists`)
+      }
       const command =
         // prettier-ignore
         `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=1920:-2, fps=10" -b:v 400k -threads 1 -preset veryfast ${outPath}`
