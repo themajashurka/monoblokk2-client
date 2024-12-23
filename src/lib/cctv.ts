@@ -83,7 +83,9 @@ export class CCTV {
               return [
                 `  ${cl.username}:`,
                 `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
-                `    runOnRecordSegmentComplete: curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
+                `    runOnRecordSegmentComplete: ${
+                  process.platform === 'win32' ? 'start /B ' : ''
+                }curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
               ]
             })
             .flat()
