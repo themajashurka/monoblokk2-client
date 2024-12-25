@@ -618,7 +618,7 @@ pathDefaults:
 paths:
   Junior:
     source: rtsp://Junior:Junior@192.168.0.157:554/stream1
-    runOnRecordSegmentComplete: curl -s http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH
+    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH
   #proxied:
   #   source: rtsp://user:pass@host:port/path
   # example:
