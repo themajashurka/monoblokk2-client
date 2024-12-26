@@ -19,6 +19,8 @@ type SettingsData = {
   printers: PrinterObj[]
   cctvs: CCTVObj[]
   webrtcPort: number
+  recordSegmentDurationInMinutes: number
+  recordDeleteAfterDays: number
   users: User[]
   nettestSettings: NettestSettings
 }

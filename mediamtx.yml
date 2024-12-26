@@ -1,3 +1,4 @@
+
 ###############################################
 # Global settings
 
@@ -391,7 +392,7 @@ pathDefaults:
   # Therefore, the part duration is equal to the RPO (recovery point objective).
   recordPartDuration: 1000ms
   # Minimum duration of each segment.
-  recordSegmentDuration: 5s
+  recordSegmentDuration: 5m
   # Delete segments after this timespan.
   # Set to 0s to disable automatic deletion.
   recordDeleteAfter: 120h
@@ -619,6 +620,8 @@ paths:
   Junior:
     source: rtsp://Junior:Junior@192.168.0.157:554/stream1
     runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH
+    recordSegmentDuration: 1m
+    recordDeleteAfter: 120h
   #proxied:
   #   source: rtsp://user:pass@host:port/path
   # example:
