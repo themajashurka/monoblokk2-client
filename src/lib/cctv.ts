@@ -22,8 +22,9 @@ export class CCTV {
     segmentDurationInMinutes: number
     deleteAfterDays: number
     compressedFps: number
-    compressedKBps: number
+    compressedKbps: number
     compressedWidth: number
+    encodingPreset: string
   }[] = []
   remote: {
     username: string
@@ -187,7 +188,7 @@ export class CCTV {
         (cl) => cl.username === camera
       )!
 
-      const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKBps}k -threads 1 -preset veryfast ${outPath}`
+      const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
       exec(command, async (error, stdout, stderr) => {
         if (error) console.error(error)
         if (stderr) console.error(stderr)
@@ -212,7 +213,7 @@ export class CCTV {
       password: process.env.SFTP_PWD,
       timeout: 30 * 1000,
       throttle: {
-        bps: noThrottle ? undefined : (1000 / 8) * cameraObj.compressedKBps * 2,
+        bps: noThrottle ? undefined : (1000 / 8) * cameraObj.compressedKbps * 2,
       } as Throttle.Options,
     }
 
