@@ -1,9 +1,12 @@
 import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
-  notifyUser: false,
+  notifyUser: true,
+  onNotifyUser: ({ event }) => {
+    autoUpdater.quitAndInstall()
+  },
 })
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, autoUpdater } from 'electron'
 import path from 'path'
 import _express from 'express'
 import cookieParser from 'cookie-parser'
@@ -24,6 +27,7 @@ config({
 })
 import log from 'electron-log/node'
 import { Log } from './lib/log'
+import { electron } from 'process'
 console.log = log.log
 console.error = log.error
 console.info = log.info
