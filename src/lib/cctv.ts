@@ -9,7 +9,7 @@ import { EOL } from 'node:os'
 import type { Express } from 'express'
 import Client from 'ssh2-sftp-client'
 import Throttle from 'throttle'
-import { readFile } from 'node:fs'
+import { Sync } from './sync'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 
@@ -189,6 +189,7 @@ export class CCTV {
       )!
 
       const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
+      console.log(command)
       exec(command, async (error, stdout, stderr) => {
         if (error) console.error(error)
         if (stderr) console.error(stderr)
@@ -204,47 +205,15 @@ export class CCTV {
     camera: string,
     _path: string,
     cleanPath: string,
-    cameraObj: CCTVObj,
-    noThrottle?: boolean
-  ) => {
-    const config = {
-      host: process.env.SFTP_HOST,
-      username: process.env.SFTP_USER,
-      password: process.env.SFTP_PWD,
-      timeout: 30 * 1000,
-      throttle: {
-        bps: noThrottle ? undefined : (1000 / 8) * cameraObj.compressedKbps * 2,
-      } as Throttle.Options,
-    }
-
-    let client = new Client()
-
-    let remote = `/home/marci/cctv/${camera}/${path.basename(cleanPath)}`
-
-    const throttleStream = new Throttle(config.throttle)
-    const readStream = fsSync.createReadStream(_path)
-    readStream.pipe(throttleStream)
-
-    return client
-      .connect(config)
-      .then(() => {
-        return client.mkdir(path.dirname(remote), true)
-      })
-      .then(() => {
-        return client.put(throttleStream, remote)
-      })
-      .then(() => {
-        return client.end()
-      })
-      .then(() => fs.unlink(_path))
-      .catch((err) => {
-        console.error(err.message)
-        return fs.rename(_path, cleanPath)
-      })
-      .finally(() => {
-        console.log('upload completed ->', path.basename(cleanPath))
-      })
-  }
+    cameraObj: CCTVObj
+  ) =>
+    await Sync.upload({
+      move: true,
+      cleanPath,
+      path: _path,
+      remotePath: `/home/marci/cctv/${camera}/${path.basename(cleanPath)}`,
+      throttleKbps: cameraObj.compressedKbps * 2,
+    })
 
   killService = async () => {
     const fkill = await _fkill

@@ -1,6 +1,7 @@
 import { updateElectronApp } from 'update-electron-app'
 updateElectronApp({
   updateInterval: '5 minutes',
+  notifyUser: false,
 })
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
@@ -22,6 +23,7 @@ config({
     : path.resolve(process.cwd(), '.env'),
 })
 import log from 'electron-log/node'
+import { Log } from './lib/log'
 console.log = log.log
 console.error = log.error
 console.info = log.info
@@ -108,6 +110,14 @@ app.on('ready', async () => {
   endpoint.compressNewRecordings(express, trayMenu)
 
   express.listen(3000)
+
+  Log.sync(trayMenu)
+  setInterval(
+    () => {
+      Log.sync(trayMenu)
+    },
+    dev ? 1000 * 10 : 1000 * 60 * 60
+  )
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
