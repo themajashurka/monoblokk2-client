@@ -18,18 +18,19 @@ export class Sync {
       password: process.env.SFTP_PWD,
       timeout: 30 * 1000,
       throttle: {
-        bps: args.throttleKbps ? (args.throttleKbps / 8) * 1000 : undefined,
+        bps: args.throttleKbps ? args.throttleKbps * 1000 : undefined,
       } as Throttle.Options,
     }
 
-    let client = new Client()
+    const client = new Client()
 
+    let input: Throttle | Buffer
     if (args.throttleKbps) {
-      var throttleStream = new Throttle(config.throttle)
+      input = new Throttle(config.throttle)
       const readStream = fsSync.createReadStream(args.path)
-      readStream.pipe(throttleStream)
+      readStream.pipe(input)
     } else {
-      var file = await fs.readFile(args.path)
+      input = await fs.readFile(args.path)
     }
 
     return client
@@ -38,7 +39,7 @@ export class Sync {
         return client.mkdir(nodePath.dirname(args.remotePath), true)
       })
       .then(() => {
-        return client.put(throttleStream ?? file, args.remotePath)
+        return client.put(input, args.remotePath)
       })
       .then(() => {
         return client.end()

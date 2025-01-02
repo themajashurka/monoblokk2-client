@@ -103,3 +103,5 @@ ffmpeg_binary_win32
 mediamtx_binary_win32
 rclone_binary_win32
 speedtest_binary_win32
+
+compression_test

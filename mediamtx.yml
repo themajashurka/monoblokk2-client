@@ -619,8 +619,8 @@ pathDefaults:
 paths:
   Junior:
     source: rtsp://Junior:Junior@192.168.0.157:554/stream1
-    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH
-    recordSegmentDuration: 5m
+    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH&duration=$MTX_SEGMENT_DURATION
+    recordSegmentDuration: 1m
     recordDeleteAfter: 120h
   #proxied:
   #   source: rtsp://user:pass@host:port/path

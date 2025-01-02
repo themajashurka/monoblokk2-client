@@ -96,7 +96,7 @@ export class CCTV {
                 `  ${cl.username}:`,
                 `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
                 //prettier-ignore
-                `    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
+                `    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH&duration=$MTX_SEGMENT_DURATION`,
                 `    recordSegmentDuration: ${cl.segmentDurationInMinutes}m`,
                 `    recordDeleteAfter: ${cl.deleteAfterDays * 24}h`,
               ]
@@ -142,7 +142,8 @@ export class CCTV {
         path.basename(req.query.path as string, CCTV.inExt)
       )
       const camera = req.query.camera as string | null
-      if (!_path || !camera) return
+      const duration = Number(req.query.duration as string)
+      if (!_path || !camera || !duration) return
 
       try {
         await fs.mkdir(
@@ -189,33 +190,46 @@ export class CCTV {
         (cl) => cl.username === camera
       )!
 
-      const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
-      console.log(command)
       if (cameraObj.enableCompression) {
+        console.log('compression is enabled')
+        //prettier-ignore
+        const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
+        console.log(command)
         exec(command, async (error, stdout, stderr) => {
           if (error) console.error(error)
           if (stderr) console.error(stderr)
           await fs.rename(outPath, uploadingPath)
           console.log('compressing done! ->', path.basename(_path))
           res.json({ compressing: 'done' })
-          await CCTV.move(camera, uploadingPath, cleanPath)
+          await CCTV.move(camera, uploadingPath, cleanPath, duration)
         })
       } else {
         console.log('compression is disabled')
-        await fs.rename(outPath, uploadingPath)
+        await fs.copyFile(inPath, uploadingPath)
+        await CCTV.move(camera, uploadingPath, cleanPath, duration)
         res.json({ compressing: 'disabled' })
       }
     })
   }
 
-  static move = async (camera: string, _path: string, cleanPath: string) => {
-    const sizeInKb = (await fs.stat(_path)).size * 1000
+  static move = async (
+    camera: string,
+    _path: string,
+    cleanPath: string,
+    duration: number
+  ) => {
+    const sizeInKb = (await fs.stat(_path)).size / 1000
+    const throttleKbps = (sizeInKb * 2) / duration
+    console.log(
+      //prettier-ignore
+      `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
+    )
     await Sync.upload({
       move: true,
       cleanPath,
       path: _path,
       remotePath: `/home/marci/cctv/${camera}/${path.basename(cleanPath)}`,
-      throttleKbps: sizeInKb * 2,
+      throttleKbps,
     })
   }
 
