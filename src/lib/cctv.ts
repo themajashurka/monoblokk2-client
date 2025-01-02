@@ -21,6 +21,7 @@ export class CCTV {
     ip: string
     segmentDurationInMinutes: number
     deleteAfterDays: number
+    enableCompression: boolean
     compressedFps: number
     compressedKbps: number
     compressedWidth: number
@@ -190,30 +191,33 @@ export class CCTV {
 
       const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
       console.log(command)
-      exec(command, async (error, stdout, stderr) => {
-        if (error) console.error(error)
-        if (stderr) console.error(stderr)
+      if (cameraObj.enableCompression) {
+        exec(command, async (error, stdout, stderr) => {
+          if (error) console.error(error)
+          if (stderr) console.error(stderr)
+          await fs.rename(outPath, uploadingPath)
+          console.log('compressing done! ->', path.basename(_path))
+          res.json({ compressing: 'done' })
+          await CCTV.move(camera, uploadingPath, cleanPath)
+        })
+      } else {
+        console.log('compression is disabled')
         await fs.rename(outPath, uploadingPath)
-        console.log('compressing done! ->', path.basename(_path))
-        res.json({ compressing: 'done' })
-        await CCTV.move(camera, uploadingPath, cleanPath, cameraObj)
-      })
+        res.json({ compressing: 'disabled' })
+      }
     })
   }
 
-  static move = async (
-    camera: string,
-    _path: string,
-    cleanPath: string,
-    cameraObj: CCTVObj
-  ) =>
+  static move = async (camera: string, _path: string, cleanPath: string) => {
+    const sizeInKb = (await fs.stat(_path)).size * 1000
     await Sync.upload({
       move: true,
       cleanPath,
       path: _path,
       remotePath: `/home/marci/cctv/${camera}/${path.basename(cleanPath)}`,
-      throttleKbps: cameraObj.compressedKbps * 2,
+      throttleKbps: sizeInKb * 2,
     })
+  }
 
   killService = async () => {
     const fkill = await _fkill
