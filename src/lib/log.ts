@@ -16,6 +16,11 @@ export class Log {
         cleanPath: log,
         move: false,
         remotePath: `/home/marci/logs/${trayMenu.locationName}/${_log}`,
+        login: {
+          host: process.env.SFTP_HOST!,
+          username: process.env.SFTP_USER!,
+          password: process.env.SFTP_PWD!,
+        },
       })
     }
   }

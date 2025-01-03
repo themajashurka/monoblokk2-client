@@ -26,6 +26,10 @@ export class CCTV {
     compressedKbps: number
     compressedWidth: number
     encodingPreset: string
+    remoteHost: string
+    remoteUsername: string
+    remotePassword: string
+    remoteRootDir: string
   }[] = []
   remote: {
     username: string
@@ -83,7 +87,6 @@ export class CCTV {
       'paths:',
       '#webrtcAddress:',
       '  #recordPath:',
-      '#recordSegmentDuration:',
     ] as const) {
       const insertionIndex = configArr.findIndex((x) => x === line)
 
@@ -201,12 +204,12 @@ export class CCTV {
           await fs.rename(outPath, uploadingPath)
           console.log('compressing done! ->', path.basename(_path))
           res.json({ compressing: 'done' })
-          await CCTV.move(camera, uploadingPath, cleanPath, duration)
+          await CCTV.move(camera, uploadingPath, cleanPath, duration, cameraObj)
         })
       } else {
         console.log('compression is disabled')
         await fs.copyFile(inPath, uploadingPath)
-        await CCTV.move(camera, uploadingPath, cleanPath, duration)
+        await CCTV.move(camera, uploadingPath, cleanPath, duration, cameraObj)
         res.json({ compressing: 'disabled' })
       }
     })
@@ -216,7 +219,8 @@ export class CCTV {
     camera: string,
     _path: string,
     cleanPath: string,
-    duration: number
+    duration: number,
+    cameraObj: CCTVObj
   ) => {
     const sizeInKb = (await fs.stat(_path)).size / 1000
     const throttleKbps = (sizeInKb * 2) / duration
@@ -228,8 +232,15 @@ export class CCTV {
       move: true,
       cleanPath,
       path: _path,
-      remotePath: `/home/marci/cctv/${camera}/${path.basename(cleanPath)}`,
+      remotePath: `${cameraObj.remoteRootDir}/${camera}/${path.basename(
+        cleanPath
+      )}`,
       throttleKbps,
+      login: {
+        host: cameraObj.remoteHost,
+        username: cameraObj.remoteUsername,
+        password: cameraObj.remotePassword,
+      },
     })
   }
 

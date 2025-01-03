@@ -11,11 +11,16 @@ export class Sync {
     remotePath: string
     move: boolean
     throttleKbps?: number
+    login: {
+      host: string
+      username: string
+      password: string
+    }
   }) => {
     const config = {
-      host: process.env.SFTP_HOST,
-      username: process.env.SFTP_USER,
-      password: process.env.SFTP_PWD,
+      host: args.login.host,
+      username: args.login.username,
+      password: args.login.password,
       timeout: 30 * 1000,
       throttle: {
         bps: args.throttleKbps ? args.throttleKbps * 1000 : undefined,
