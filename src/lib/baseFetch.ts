@@ -31,7 +31,7 @@ export const baseFetch = async (
         },
       }).then((x) => x.json() as Object)),
     }
-    result.ok = true
+    result.ok ??= true
     result.baseFetchOk = true
   }
 

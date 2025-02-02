@@ -72,12 +72,13 @@ export class TrayMenu {
 
     if (!process.env.BYPASS_SERVER_COMMUNICATION) {
       const ipMac = await this.settings.getMacIp()
-      await baseFetch(
+      const informIpResult = await baseFetch(
         ipMac.mac,
         '/api/external/local-client/inform-ip',
         { ipAddress: ipMac.ip },
         this
       )
+      if (!informIpResult.ok) throw new Error('inform ip fail')
       if (!this.dev) this.nettest.beginTesting()
     }
     console.log('INIT ENDED')
