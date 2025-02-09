@@ -38,6 +38,8 @@ export class Sync {
       input = await fs.readFile(args.path)
     }
 
+    console.log(args.remotePath)
+
     return client
       .connect(config)
       .then(() => {

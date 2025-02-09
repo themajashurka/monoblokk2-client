@@ -22,6 +22,8 @@ export class TrayMenu {
   nettest: Nettest
   cctv: CCTV
   heartbeatCount = { count: 0, last: new Date() }
+  initting = false
+  heartbeatTimeout: NodeJS.Timeout | undefined
 
   public set setPrinters(printers: Printer[]) {
     this.printers = printers
@@ -57,18 +59,25 @@ export class TrayMenu {
     this.cctv = new CCTV(this)
   }
 
-  init = async () => {
-    console.log('START INITING')
+  init = async (args?: { resetSettingsOnly?: boolean }) => {
+    console.log(
+      'START INITING',
+      args?.resetSettingsOnly ? 'resetting only!' : ''
+    )
+    this.initting = true
+    clearTimeout(this.heartbeatTimeout)
     this.showPasscodeDialog = process.env.BYPASS_SERVER_COMMUNICATION
       ? false
       : await this.settings.get()
 
-    this.tray = new Tray(
-      nativeImage.createFromPath(
-        this.dev ? 'M.png' : path.join(process.resourcesPath, 'M.png')
+    if (!args?.resetSettingsOnly) {
+      this.tray = new Tray(
+        nativeImage.createFromPath(
+          this.dev ? 'M.png' : path.join(process.resourcesPath, 'M.png')
+        )
       )
-    )
-    this.tray.setToolTip('Monoblokk kliens')
+      this.tray.setToolTip('Monoblokk kliens')
+    }
 
     if (!process.env.BYPASS_SERVER_COMMUNICATION) {
       const ipMac = await this.settings.getMacIp()
@@ -78,13 +87,17 @@ export class TrayMenu {
         { ipAddress: ipMac.ip },
         this
       )
-      if (!informIpResult.ok) throw new Error('inform ip fail')
+      if (!informIpResult.ok) {
+        this.initting = false
+        throw new Error('inform ip fail')
+      }
       if (!this.dev) this.nettest.beginTesting()
     }
-    console.log('INIT ENDED')
+    console.log('INIT ENDED', args?.resetSettingsOnly ? 'resetting only!' : '')
+    this.initting = false
     ///
     this.cctv.startService()
-    this.beginHeartbeat()
+    this.beginHeartbeat({ resetHeartbeats: true })
   }
 
   make = async () => {
@@ -308,20 +321,30 @@ export class TrayMenu {
     this.make()
   }
 
-  beginHeartbeat = async () => {
-    await baseFetch(
+  beginHeartbeat = async (args?: { resetHeartbeats?: boolean }) => {
+    const updateSettings = await baseFetch(
       (
         await this.settings.getMacIp()
       ).mac,
       '/api/external/local-client/heartbeat',
       {
+        resetted: args?.resetHeartbeats,
         version: app.getVersion(),
       },
       this
     )
+    if (args?.resetHeartbeats) this.heartbeatCount.count = 0
     this.heartbeatCount.count++
     this.heartbeatCount.last = new Date()
-    this.make()
-    setTimeout(this.beginHeartbeat, (this.dev ? 10 : 60) * 1000)
+    if (!this.initting) {
+      if (updateSettings.details.needRestart) {
+        this.init({ resetSettingsOnly: true })
+        return
+      } else this.make()
+    }
+    this.heartbeatTimeout = setTimeout(
+      this.beginHeartbeat,
+      (this.dev ? 10 : 60) * 1000
+    )
   }
 }

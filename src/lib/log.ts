@@ -11,7 +11,7 @@ export class Log {
     const logs = await fs.readdir(dir)
     for (const log of logs.map((l) => path.join(dir, l))) {
       const _log = path.basename(log, '.txt') + date + '.txt'
-      await Sync.upload({
+      /* await Sync.upload({
         path: log,
         cleanPath: log,
         move: false,
@@ -21,7 +21,7 @@ export class Log {
           username: process.env.SFTP_USER!,
           password: process.env.SFTP_PWD!,
         },
-      })
+      }) */
     }
   }
 }

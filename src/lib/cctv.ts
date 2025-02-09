@@ -30,6 +30,7 @@ export class CCTV {
     remoteUsername: string
     remotePassword: string
     remoteRootDir: string
+    uploadCompletionTarget: number
   }[] = []
   remote: {
     username: string
@@ -65,6 +66,7 @@ export class CCTV {
 
   setCameraLogins = async (x: CCTVObj[]) => {
     this.cameraLogins = x
+    console.log({ cameraLogins: this.cameraLogins })
     await this.rewriteConfig()
   }
 
@@ -223,7 +225,8 @@ export class CCTV {
     cameraObj: CCTVObj
   ) => {
     const sizeInKb = (await fs.stat(_path)).size / 1000
-    const throttleKbps = (sizeInKb * 2) / duration
+    const throttleKbps =
+      (sizeInKb * (1 / cameraObj.uploadCompletionTarget)) / duration
     console.log(
       //prettier-ignore
       `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
