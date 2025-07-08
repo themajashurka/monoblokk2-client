@@ -15,7 +15,7 @@ export const baseFetch = async (
     trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY
   const url = baseUrl(trayMenu.dev) + pathname
 
-  let result: Object = {}
+  let result: Record<any, any> = {}
 
   const makeFetch = async () => {
     result = {
@@ -29,7 +29,12 @@ export const baseFetch = async (
         headers: {
           'Monoblokk-Api-Key': apiKey,
         },
-      }).then((x) => x.json() as Object)),
+      })
+        .then((x) => x.json() as Object)
+        .catch(() => {
+          console.error('response was not a json!')
+          return { ok: false, cause: 'json parsing' }
+        })),
     }
     result.ok ??= true
     result.baseFetchOk = true

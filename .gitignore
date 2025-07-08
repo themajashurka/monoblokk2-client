@@ -105,3 +105,5 @@ rclone_binary_win32
 speedtest_binary_win32
 
 compression_test
+
+src/deleteOldCctvFootage/testdir
