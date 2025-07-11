@@ -3,7 +3,7 @@ import { TrayMenu } from './trayMenu'
 export type Object = { [key: string]: any }
 
 export const baseUrl = (dev: boolean) =>
-  dev ? 'https://localhost:4173' : 'https://2.monoblokk.eu'
+  dev ? 'https://localhost:5555' : 'https://2.monoblokk.eu'
 
 export const baseFetch = async (
   deviceId: string,
