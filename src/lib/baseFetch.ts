@@ -3,7 +3,7 @@ import { TrayMenu } from './trayMenu'
 export type Object = { [key: string]: any }
 
 export const baseUrl = (dev: boolean) =>
-  dev ? 'https://localhost:5555' : 'https://2.monoblokk.eu'
+  dev ? 'https://localhost:4173' : 'https://2.monoblokk.eu'
 
 export const baseFetch = async (
   deviceId: string,
@@ -15,7 +15,7 @@ export const baseFetch = async (
     trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY
   const url = baseUrl(trayMenu.dev) + pathname
 
-  let result: Record<any, any> = {}
+  let result: Record<any, any> & { ok: boolean } = { ok: false }
 
   const makeFetch = async () => {
     result = {
@@ -30,14 +30,14 @@ export const baseFetch = async (
           'Monoblokk-Api-Key': apiKey,
         },
       })
-        .then((x) => x.json() as Object)
-        .catch(() => {
-          console.error('response was not a json!')
-          return { ok: false, cause: 'json parsing' }
+        .then((x) => {
+          return x.json() as Object
+        })
+        .catch((e) => {
+          console.error('error with response:', e)
+          throw e
         })),
     }
-    result.ok ??= true
-    result.baseFetchOk = true
   }
 
   for (let i = 0; i < 1200; i++) {
@@ -51,7 +51,6 @@ export const baseFetch = async (
       )
       await new Promise((res) => setTimeout(() => res(''), 500))
       result.ok = false
-      result.baseFetchOk = false
     }
   }
 

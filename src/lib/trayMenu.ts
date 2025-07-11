@@ -334,24 +334,27 @@ export class TrayMenu {
       this
     )
 
-    if (args?.resetHeartbeats) this.heartbeatCount.count = 0
-    this.heartbeatCount.count++
-    this.heartbeatCount.last = new Date()
-    if (!this.initting) {
-      if (updateSettings.details.needRestart) {
-        try {
-          this.init({ resetSettingsOnly: true })
-        } catch (error) {
-          console.error(
-            'because of settings change a restart was needed, and initting failed at beginHeartbeat'
-          )
-        }
-        return
-      } else this.make()
+    if (updateSettings.ok) {
+      if (args?.resetHeartbeats) this.heartbeatCount.count = 0
+      this.heartbeatCount.count++
+      this.heartbeatCount.last = new Date()
+      if (!this.initting) {
+        if (updateSettings.details.needRestart) {
+          try {
+            this.init({ resetSettingsOnly: true })
+          } catch (error) {
+            console.error(
+              'because of settings change a restart was needed, and initting failed at beginHeartbeat'
+            )
+          }
+          return
+        } else this.make()
+      }
     }
-    this.heartbeatTimeout = setTimeout(
-      this.beginHeartbeat,
-      (this.dev ? 10 : 60) * 1000
-    )
+
+    this.heartbeatTimeout = setTimeout(() => {
+      this.beginHeartbeat()
+      this.beginHeartbeat()
+    }, (this.dev ? 1 : 60) * 1000)
   }
 }
