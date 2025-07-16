@@ -1,7 +1,7 @@
 {
   "name": "monoblokk2-client",
   "productName": "monoblokk2-client",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "//": "",
   "description": "monoblokk2-client",
   "repository": {
@@ -74,6 +74,8 @@
     "nan": "2.18.0",
     "node-thermal-printer": "^4.4.2",
     "private-ip": "3.0.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "ssh2-sftp-client": "^11.0.0",
     "throttle": "^1.0.3",
     "update-electron-app": "^3.0.0",

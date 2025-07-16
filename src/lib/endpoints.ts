@@ -16,4 +16,5 @@ export const endpoint = {
   setShiftLeft: setShiftState('Left'),
   getLocationName: getLocationName,
   compressNewRecordings: CCTV.compressNewRecordings,
+  registerNewRecordings: CCTV.registerNewRecordings,
 }

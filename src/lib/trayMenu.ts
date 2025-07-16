@@ -96,7 +96,10 @@ export class TrayMenu {
     console.log('INIT ENDED', args?.resetSettingsOnly ? 'resetting only!' : '')
     this.initting = false
     ///
-    this.cctv.startService()
+    await this.cctv.createDb()
+    this.cctv.startMediaService()
+    this.cctv.startMoveLeftoverClipsService()
+    this.cctv.startSyncDbService()
     this.beginHeartbeat({ resetHeartbeats: true })
   }
 

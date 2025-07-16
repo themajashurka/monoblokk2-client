@@ -107,3 +107,5 @@ speedtest_binary_win32
 compression_test
 
 src/deleteOldCctvFootage/testdir
+
+mediamtx.yml

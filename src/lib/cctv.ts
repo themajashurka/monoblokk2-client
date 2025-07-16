@@ -3,15 +3,30 @@ import path from 'path'
 import { TrayMenu } from './trayMenu'
 const _fkill = import('fkill').then((x) => x.default)
 import fs from 'fs/promises'
-import fsSync from 'fs'
 import { app } from 'electron'
 import { EOL } from 'node:os'
 import type { Express } from 'express'
-import Client from 'ssh2-sftp-client'
-import Throttle from 'throttle'
 import { Sync } from './sync'
+import sqlite3 from 'sqlite3'
+import { Database, open } from 'sqlite'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
+enum CCTVUploadStatus {
+  streaming = 'streaming',
+  streamed = 'streamed',
+  ready = 'ready',
+  compressing = 'compressing',
+  compressed = 'compressed',
+  uploading = 'uploading',
+  uploaded = 'uploaded',
+}
+type CCTVSchema = {
+  camera: string
+  status: CCTVUploadStatus
+  duration: number
+  path: string
+  timestamp: string
+}
 
 export class CCTV {
   private trayMenu: TrayMenu
@@ -39,10 +54,12 @@ export class CCTV {
   }[] = []
   port: number = 8891
 
+  static dbname = path.join(app.getPath('userData'), 'main.db')
   static processingSuffix = '_processing'
   static uploadingSuffix = '_uploading'
   static inExt = '.ts'
   static outExt = '.mp4'
+  static uploadStatus = CCTVUploadStatus
 
   private get mediamtxBinaryPath() {
     const mediamtxBinaryDir = this.trayMenu.dev
@@ -102,6 +119,7 @@ export class CCTV {
                 `    source: rtsp://${cl.username}:${cl.password}@${cl.ip}:554/stream1`,
                 //prettier-ignore
                 `    runOnRecordSegmentComplete: http://localhost:3000/compressNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH&duration=$MTX_SEGMENT_DURATION`,
+                `    runOnRecordSegmentCreate: http://localhost:3000/registerNewRecordings?camera=$MTX_PATH&path=$MTX_SEGMENT_PATH`,
                 `    recordSegmentDuration: ${cl.segmentDurationInMinutes}m`,
                 `    recordDeleteAfter: ${cl.deleteAfterDays * 24}h`,
               ]
@@ -125,19 +143,86 @@ export class CCTV {
     await fs.writeFile(configPath, configArr.join('\n'))
   }
 
-  startService = async () => {
-    await Promise.allSettled([
-      new Promise(() => {
-        const { stdout, stderr } = spawn(this.mediamtxBinaryPath, {
-          stdio: 'pipe',
-          detached: true,
-        })
-        stdout.setEncoding('utf8')
-        stderr.setEncoding('utf8')
-        stdout.on('data', (data) => console.log(data))
-        stderr.on('data', (data) => console.log(data))
-      }),
-    ])
+  createDb = async () => {
+    if (this.trayMenu.dev) {
+      try {
+        await fs.unlink(CCTV.dbname)
+      } catch (_) {
+        console.log('there was no existing db!')
+      }
+    }
+    const dbiIsCreated = !!(await fs.readdir(path.dirname(CCTV.dbname))).find(
+      (f) => f === path.basename(CCTV.dbname)
+    )
+
+    const db = await CCTV.getDb()
+    if (!dbiIsCreated) {
+      new sqlite3.Database(CCTV.dbname)
+      await db.exec(
+        'CREATE TABLE cctv (camera, path, timestamp, duration, status)'
+      )
+    }
+    if (this.trayMenu.dev) {
+      //await db.exec(`UPDATE cctv SET status = '${CCTV.uploadStatus.ready}'`)
+    }
+    await db.exec(
+      `DELETE FROM cctv WHERE datetime(timestamp) < datetime('now', '-7 days')`
+    )
+    await db.close()
+  }
+
+  startMediaService = () => {
+    const { stdout, stderr } = spawn(this.mediamtxBinaryPath, {
+      stdio: 'pipe',
+      detached: true,
+    })
+    stdout.setEncoding('utf8')
+    stderr.setEncoding('utf8')
+    stdout.on('data', (data) => console.log(data))
+    stderr.on('data', (data) => console.log(data))
+  }
+
+  static cleanPath = () => {}
+
+  static registerNewRecordings = (express: Express, trayMenu: TrayMenu) => {
+    express.get('/registerNewRecordings', async (req, res) => {
+      const _path = path.join(
+        path.dirname(req.query.path as string),
+        path.basename(req.query.path as string, CCTV.inExt)
+      )
+      const camera = req.query.camera as string | null
+      if (!_path || !camera) return
+
+      const [inPath, outPath] = [
+        `${_path}${CCTV.inExt}`,
+        `${path.resolve(
+          _path,
+          '..',
+          '..',
+          '..',
+          'recordings_compressed',
+          camera,
+          path.basename(_path)
+        )}${CCTV.processingSuffix}${CCTV.outExt}`,
+      ]
+      const cleanPath =
+        path.join(
+          path.dirname(outPath),
+          path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
+        ) + CCTV.outExt
+
+      const db = await CCTV.getDb()
+      const rawTime = path.basename(cleanPath, CCTV.outExt).slice(0, 26)
+      await db.exec(
+        `INSERT INTO cctv (camera, path, timestamp, status)
+      VALUES ('${camera}', '${cleanPath}', '${`${
+          rawTime.split('_')[0]
+        }T${rawTime.split('_')[1].slice(0, 8).replaceAll('-', ':')}.${rawTime
+          .split('-')
+          .at(-1)}`}', '${CCTV.uploadStatus.streaming}')`
+      )
+      await db.close()
+    })
   }
 
   static compressNewRecordings = (express: Express, trayMenu: TrayMenu) => {
@@ -150,6 +235,11 @@ export class CCTV {
       const duration = Number(req.query.duration as string)
       if (!_path || !camera || !duration) return
 
+      const db = await CCTV.getDb()
+      await CCTV.updateDb(db, _path, {
+        duration,
+        status: CCTVUploadStatus.streamed,
+      })
       try {
         await fs.mkdir(
           path.resolve(
@@ -183,18 +273,22 @@ export class CCTV {
           path.dirname(outPath),
           path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
         ) + CCTV.outExt
-      const uploadingPath =
+      /*  const uploadingPath =
         path.join(
           path.dirname(cleanPath),
           path.basename(cleanPath, CCTV.outExt)
         ) +
         CCTV.uploadingSuffix +
-        CCTV.outExt
+        CCTV.outExt */
 
       const cameraObj = trayMenu.cctv.cameraLogins.find(
         (cl) => cl.username === camera
       )!
 
+      await CCTV.updateDb(db, _path, {
+        duration,
+        status: CCTVUploadStatus.compressing,
+      })
       if (cameraObj.enableCompression) {
         console.log('compression is enabled')
         //prettier-ignore
@@ -203,40 +297,72 @@ export class CCTV {
         exec(command, async (error, stdout, stderr) => {
           if (error) console.error(error)
           if (stderr) console.error(stderr)
-          await fs.rename(outPath, uploadingPath)
+          //await fs.rename(outPath, uploadingPath)
           console.log('compressing done! ->', path.basename(_path))
           res.json({ compressing: 'done' })
-          await CCTV.move(camera, uploadingPath, cleanPath, duration, cameraObj)
+
+          await CCTV.updateDb(db, _path, {
+            duration,
+            status: CCTVUploadStatus.compressed,
+          })
+          await CCTV.move(camera, cleanPath, duration, cameraObj)
         })
       } else {
         console.log('compression is disabled')
-        await fs.copyFile(inPath, uploadingPath)
-        await CCTV.move(camera, uploadingPath, cleanPath, duration, cameraObj)
+        await fs.copyFile(inPath, cleanPath)
+
+        await CCTV.updateDb(db, _path, {
+          duration,
+          status: CCTVUploadStatus.compressed,
+        })
+        await CCTV.move(camera, cleanPath, duration, cameraObj)
         res.json({ compressing: 'disabled' })
       }
+      await db.close()
     })
+  }
+
+  static getDb = () => open({ filename: CCTV.dbname, driver: sqlite3.Database })
+
+  static updateDb = async (
+    db: Database<sqlite3.Database, sqlite3.Statement>,
+    path: string,
+    fields: Partial<CCTVSchema>
+  ) => {
+    await db.exec(
+      `UPDATE cctv
+      SET ${Object.entries(fields)
+        .map(
+          (f) => `${f[0]} = ${typeof f[1] === 'number' ? f[1] : `'${f[1]}'`}`
+        )
+        .join(', ')}
+      WHERE path = '${path}'`
+    )
   }
 
   static move = async (
     camera: string,
     _path: string,
-    cleanPath: string,
     duration: number,
     cameraObj: CCTVObj
   ) => {
     const sizeInKb = (await fs.stat(_path)).size / 1000
-    const throttleKbps =
-      (sizeInKb * (1 / cameraObj.uploadCompletionTarget)) / duration
+    const throttleKbps = (sizeInKb * (1 / 0.8)) / duration //TODO: cameraObj.uploadCompletionTarget
     console.log(
       //prettier-ignore
       `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
     )
-    await Sync.upload({
+
+    const db = await CCTV.getDb()
+    await CCTV.updateDb(db, _path, {
+      duration,
+      status: CCTVUploadStatus.uploading,
+    })
+    const syncResult = await Sync.upload({
       move: true,
-      cleanPath,
       path: _path,
       remotePath: `${cameraObj.remoteRootDir}/${camera}/${path.basename(
-        cleanPath
+        _path
       )}`,
       throttleKbps,
       login: {
@@ -245,6 +371,80 @@ export class CCTV {
         password: cameraObj.remotePassword,
       },
     })
+    await CCTV.updateDb(db, _path, {
+      status: syncResult.ok
+        ? CCTV.uploadStatus.uploaded
+        : CCTV.uploadStatus.ready,
+    })
+    await db.close()
+  }
+
+  startMoveLeftoverClipsService = async () => {
+    const db = await CCTV.getDb()
+    const leftoverClips = await db.all<
+      {
+        camera: string
+        path: string
+        duration: number
+        status: CCTVUploadStatus
+        timestamp: string
+      }[]
+    >(
+      `SELECT camera, path, duration, status, timestamp FROM cctv WHERE status in ('${CCTV.uploadStatus.ready}', '${CCTV.uploadStatus.streaming}') LIMIT 10`
+    )
+    console.log('uploading', leftoverClips.length, 'leftover clips!')
+
+    //TODO compressing old, but streaming clips first (instead of directly uploading it)
+
+    await Promise.allSettled(
+      leftoverClips
+        .filter((lc) => {
+          const camaraObj = this.trayMenu.cctv.cameraLogins.find(
+            (cl) => cl.username === lc.camera
+          )!
+
+          return lc.status === CCTVUploadStatus.streaming
+            ? Date.now() >
+                new Date(lc.timestamp).getTime() +
+                  camaraObj.segmentDurationInMinutes * 60 * 1000 * 2
+            : true
+        })
+        .map((lc) =>
+          CCTV.move(
+            lc.camera,
+            lc.path,
+            lc.duration,
+            this.trayMenu.cctv.cameraLogins.find(
+              (cl) => cl.username === lc.camera
+            )!
+          )
+        )
+    )
+    await db.close()
+
+    setTimeout(() => {
+      this.startMoveLeftoverClipsService()
+    }, 60 * 60 * 1000)
+  }
+
+  startSyncDbService = async () => {
+    const syncResult = await Sync.upload({
+      path: CCTV.dbname,
+      move: false,
+      remotePath: `/home/mbene/dbs/${this.trayMenu.locationName}.db`,
+      login: {
+        host: process.env.SFTP_HOST!,
+        username: process.env.SFTP_USER!,
+        password: process.env.SFTP_PWD!,
+      },
+    })
+    if (syncResult.ok) {
+      console.log('db synced successfully!')
+    } else {
+      console.error('db sync errored!')
+    }
+
+    setTimeout(() => this.startSyncDbService(), 60 * 60 * 1000)
   }
 
   killService = async () => {

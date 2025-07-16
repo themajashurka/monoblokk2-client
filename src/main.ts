@@ -112,6 +112,7 @@ app.on('ready', async () => {
   endpoint.setShiftLeft(express, trayMenu)
   endpoint.getLocationName(express, trayMenu)
   endpoint.compressNewRecordings(express, trayMenu)
+  endpoint.registerNewRecordings(express, trayMenu)
 
   express.listen(3000)
 

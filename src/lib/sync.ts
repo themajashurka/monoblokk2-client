@@ -7,7 +7,6 @@ import nodePath from 'path'
 export class Sync {
   static upload = async (args: {
     path: string
-    cleanPath: string
     remotePath: string
     move: boolean
     throttleKbps?: number
@@ -16,7 +15,7 @@ export class Sync {
       username: string
       password: string
     }
-  }) => {
+  }): Promise<{ ok: boolean }> => {
     const config = {
       host: args.login.host,
       username: args.login.username,
@@ -27,6 +26,8 @@ export class Sync {
       } as Throttle.Options,
     }
 
+    console.log('UPLOAD', args.path)
+
     const client = new Client()
 
     let input: Throttle | Buffer
@@ -35,10 +36,13 @@ export class Sync {
       const readStream = fsSync.createReadStream(args.path)
       readStream.pipe(input)
     } else {
-      input = await fs.readFile(args.path)
+      try {
+        input = await fs.readFile(args.path)
+      } catch (error) {
+        console.error('file to be uploaded is not found at!')
+      }
+      return { ok: false }
     }
-
-    console.log(args.remotePath)
 
     return client
       .connect(config)
@@ -53,11 +57,12 @@ export class Sync {
       })
       .then(args.move ? () => fs.unlink(args.path) : () => {})
       .then(() => {
-        console.log('upload completed ->', nodePath.basename(args.cleanPath))
+        console.log('upload completed ->', nodePath.basename(args.path))
+        return { ok: true }
       })
       .catch((err) => {
-        console.error('upload completed ->', err.message)
-        return fs.rename(args.path, args.cleanPath)
+        console.error('upload errored ->', err.message)
+        return { ok: false }
       })
   }
 }

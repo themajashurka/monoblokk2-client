@@ -13,7 +13,6 @@ export class Log {
       const _log = path.basename(log, '.txt') + date + '.txt'
       await Sync.upload({
         path: log,
-        cleanPath: log,
         move: false,
         remotePath: `/home/mbene/logs/${trayMenu.locationName}/${_log}`,
         login: {
