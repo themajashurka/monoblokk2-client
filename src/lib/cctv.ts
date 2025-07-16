@@ -171,7 +171,14 @@ export class CCTV {
     await db.close()
   }
 
-  startMediaService = () => {
+  startServices = async () => {
+    await this.createDb()
+    this.startMediaService()
+    await this.startMoveLeftoverClipsService()
+    await this.startSyncDbService()
+  }
+
+  private startMediaService = () => {
     const { stdout, stderr } = spawn(this.mediamtxBinaryPath, {
       stdio: 'pipe',
       detached: true,
@@ -379,7 +386,7 @@ export class CCTV {
     await db.close()
   }
 
-  startMoveLeftoverClipsService = async () => {
+  private startMoveLeftoverClipsService = async () => {
     const db = await CCTV.getDb()
     const leftoverClips = await db.all<
       {
@@ -427,7 +434,7 @@ export class CCTV {
     }, 60 * 60 * 1000)
   }
 
-  startSyncDbService = async () => {
+  private startSyncDbService = async () => {
     const syncResult = await Sync.upload({
       path: CCTV.dbname,
       move: false,

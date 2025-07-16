@@ -39,9 +39,9 @@ export class Sync {
       try {
         input = await fs.readFile(args.path)
       } catch (error) {
-        console.error('file to be uploaded is not found at!')
+        console.error('file to be uploaded is not found!')
+        return { ok: false }
       }
-      return { ok: false }
     }
 
     return client

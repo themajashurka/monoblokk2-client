@@ -12,7 +12,7 @@ export class Log {
     for (const log of logs.map((l) => path.join(dir, l))) {
       const _log = path.basename(log, '.txt') + date + '.txt'
       await Sync.upload({
-        path: log,
+        path: _log,
         move: false,
         remotePath: `/home/mbene/logs/${trayMenu.locationName}/${_log}`,
         login: {
