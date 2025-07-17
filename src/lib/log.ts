@@ -8,9 +8,7 @@ export class Log {
   static sync = async (trayMenu: TrayMenu) => {
     const dir = path.join(app.getPath('userData'), 'logs')
     const logs = await fs.readdir(dir)
-    console.log(logs, dir)
     for (const log of logs.map((l) => path.join(dir, l))) {
-      console.log(log)
       await Sync.upload({
         path: log,
         move: false,

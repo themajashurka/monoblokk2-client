@@ -25,6 +25,7 @@ type CCTVSchema = {
   duration: number
   path: string
   timestamp: string
+  uploadCount: number
 }
 
 export class CCTV {
@@ -158,7 +159,7 @@ export class CCTV {
     if (!dbiIsCreated) {
       new sqlite3.Database(CCTV.dbname)
       await db.exec(
-        'CREATE TABLE cctv (camera, path, timestamp, duration, status)'
+        'CREATE TABLE cctv (camera, path, timestamp, duration, status, uploadCount INTEGER DEFAULT 0)'
       )
     }
     if (this.trayMenu.dev) {
@@ -337,17 +338,24 @@ export class CCTV {
   static updateDb = async (
     db: Database<sqlite3.Database, sqlite3.Statement>,
     path: string,
-    fields: Partial<CCTVSchema>
+    fields: Partial<CCTVSchema & { incrementUploadCount: boolean }>
   ) => {
-    await db.exec(
-      `UPDATE cctv
+    const query = `UPDATE cctv
       SET ${Object.entries(fields)
         .map(
-          (f) => `${f[0]} = ${typeof f[1] === 'number' ? f[1] : `'${f[1]}'`}`
+          (f) =>
+            `${f[0] === 'incrementUploadCount' ? 'uploadCount' : f[0]} = ${
+              f[0] === 'incrementUploadCount'
+                ? 'uploadCount + 1'
+                : typeof f[1] === 'number'
+                ? f[1]
+                : `'${f[1]}'`
+            }`
         )
         .join(', ')}
       WHERE path = '${path}'`
-    )
+    console.log(query)
+    await db.exec(query)
   }
 
   static move = async (
@@ -372,6 +380,7 @@ export class CCTV {
 
     const db = await CCTV.getDb()
     await CCTV.updateDb(db, _path, {
+      incrementUploadCount: true,
       duration,
       status: CCTVUploadStatus.uploading,
     })
