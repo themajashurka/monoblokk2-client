@@ -174,7 +174,7 @@ export class CCTV {
     await this.createDb()
     this.startMediaService()
     await this.startMoveLeftoverClipsService()
-    //await this.startSyncDbService()
+    await this.startSyncDbService()
   }
 
   private startMediaService = () => {
