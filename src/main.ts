@@ -116,7 +116,6 @@ app.on('ready', async () => {
 
   express.listen(3000)
 
-  Log.sync(trayMenu)
   setInterval(
     () => {
       Log.sync(trayMenu)

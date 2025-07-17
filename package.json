@@ -1,7 +1,7 @@
 {
   "name": "monoblokk2-client",
   "productName": "monoblokk2-client",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "//": "",
   "description": "monoblokk2-client",
   "repository": {
@@ -19,7 +19,8 @@
     "publish": "env-cmd electron-forge publish",
     "publish-win": "env-cmd electron-forge publish --platform=win32",
     "lint": "eslint --ext .ts,.tsx .",
-    "rebuild": "./node_modules/.bin/electron-rebuild"
+    "rebuild": "./node_modules/.bin/electron-rebuild",
+    "kill": "pkill -f electron && pkill -f mediamtx"
   },
   "prettier": {
     "semi": false,
