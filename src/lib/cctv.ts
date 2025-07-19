@@ -165,21 +165,6 @@ export class CCTV {
         }
 
   createDb = async () => {
-    //TODO REMOVE THIS BLOCK ON NEXT VERSION (0.7.6 or 0.8.0), ITS ONLY A TEMPORARY SOLUTION!!!!
-    if (
-      !this.trayMenu.dev && //intentionally on prod only!!!
-      new Date().getFullYear() === 2025 &&
-      new Date().getMonth() + 1 === 7 &&
-      new Date().getDate() === 19
-    ) {
-      try {
-        await fs.unlink(CCTV.dbname)
-        console.log('0.7.4 DB DELETION -> OK!')
-      } catch (_) {
-        console.log('0.7.4 DB DELETION -> there was no existing db!')
-      }
-    }
-
     const dbiIsCreated = !!(await fs.readdir(path.dirname(CCTV.dbname))).find(
       (f) => f === path.basename(CCTV.dbname)
     )
@@ -381,9 +366,9 @@ export class CCTV {
         'camera' | 'inPath' | 'duration' | 'status' | 'timestamp'
       >[]
     >(
-      `SELECT camera, inPath, duration, status, timestamp FROM cctv WHERE status not in (
-        '${CCTV.uploadStatus.uploaded}'
-      ) ORDER BY datetime(timestamp) ASC LIMIT 10`
+      `SELECT camera, inPath, duration, status, timestamp FROM cctv
+      WHERE status != '${CCTV.uploadStatus.uploaded}'
+      ORDER BY datetime(timestamp) ASC LIMIT 10`
     )
 
     leftoverClips = leftoverClips.filter((lc) => {
@@ -391,14 +376,13 @@ export class CCTV {
         (cl) => cl.username === lc.camera
       )!
 
-      return lc.status === CCTVUploadStatus.compressed ||
-        lc.status === CCTVUploadStatus.uploading
-        ? Date.now() >
-            new Date(lc.timestamp).getTime() +
-              (lc.duration
-                ? lc.duration * 1000
-                : camaraObj.segmentDurationInMinutes * 60 * 1000 * 1.1)
-        : true
+      return (
+        Date.now() >
+        new Date(lc.timestamp).getTime() +
+          (lc.duration
+            ? lc.duration * 1000
+            : camaraObj.segmentDurationInMinutes * 60 * 1000 * 1.1)
+      )
     })
     for (const clip of leftoverClips.filter(
       (lc) =>
