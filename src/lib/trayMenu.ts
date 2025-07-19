@@ -354,6 +354,6 @@ export class TrayMenu {
 
     this.heartbeatTimeout = setTimeout(() => {
       this.beginHeartbeat()
-    }, (this.dev ? 1 : 60) * 1000)
+    }, 60 * 1000)
   }
 }

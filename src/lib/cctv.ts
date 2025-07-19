@@ -23,9 +23,16 @@ type CCTVSchema = {
   camera: string
   status: CCTVUploadStatus
   duration: number
-  path: string
+  inPath: string
   timestamp: string
   uploadCount: number
+}
+type CCTVPath = {
+  in: string
+  out: string
+  outBasename: string
+  withoutExt: string
+  basenameWithoutExt: string
 }
 
 export class CCTV {
@@ -55,8 +62,6 @@ export class CCTV {
   port: number = 8891
 
   static dbname = path.join(app.getPath('userData'), 'main.db')
-  static processingSuffix = '_processing'
-  static uploadingSuffix = '_uploading'
   static inExt = '.ts'
   static outExt = '.mp4'
   static uploadStatus = CCTVUploadStatus
@@ -83,7 +88,6 @@ export class CCTV {
 
   setCameraLogins = async (x: CCTVObj[]) => {
     this.cameraLogins = x
-    console.log({ cameraLogins: this.cameraLogins })
     await this.rewriteConfig()
   }
 
@@ -143,30 +147,61 @@ export class CCTV {
     await fs.writeFile(configPath, configArr.join('\n'))
   }
 
+  static makePath = (inPath: string | null): CCTVPath | null =>
+    inPath === null
+      ? null
+      : {
+          basenameWithoutExt: path.basename(inPath, CCTV.inExt),
+          in: inPath,
+          out: path.join(
+            path.dirname(inPath),
+            path.basename(inPath, CCTV.inExt) + CCTV.outExt
+          ),
+          outBasename: path.basename(inPath, CCTV.inExt) + CCTV.outExt,
+          withoutExt: path.join(
+            path.dirname(inPath),
+            path.basename(inPath, CCTV.inExt)
+          ),
+        }
+
   createDb = async () => {
+    //TODO REMOVE THIS BLOCK ON NEXT VERSION (0.7.6 or 0.8.0), ITS ONLY A TEMPORARY SOLUTION!!!!
+    if (
+      !this.trayMenu.dev && //intentionally on prod only!!!
+      new Date().getFullYear() === 2025 &&
+      new Date().getMonth() + 1 === 7 &&
+      new Date().getDate() === 19
+    ) {
+      try {
+        await fs.unlink(CCTV.dbname)
+        console.log('0.7.4 DB DELETION -> OK!')
+      } catch (_) {
+        console.log('0.7.4 DB DELETION -> there was no existing db!')
+      }
+    }
+
+    const dbiIsCreated = !!(await fs.readdir(path.dirname(CCTV.dbname))).find(
+      (f) => f === path.basename(CCTV.dbname)
+    )
+
+    const db = await CCTV.getDb()
     if (this.trayMenu.dev) {
       /* try {
         await fs.unlink(CCTV.dbname)
       } catch (_) {
         console.log('there was no existing db!')
       } */
+      //await db.exec(`UPDATE cctv SET status = '${CCTV.uploadStatus.ready}'`)
+      //await db.exec(`DELETE FROM cctv`)
     }
-    const dbiIsCreated = !!(await fs.readdir(path.dirname(CCTV.dbname))).find(
-      (f) => f === path.basename(CCTV.dbname)
-    )
-
-    const db = await CCTV.getDb()
     if (!dbiIsCreated) {
       new sqlite3.Database(CCTV.dbname)
       await db.exec(
-        'CREATE TABLE cctv (camera, path, timestamp, duration, status, uploadCount INTEGER DEFAULT 0)'
+        'CREATE TABLE cctv (camera, inPath, timestamp, duration, status, uploadCount INTEGER DEFAULT 0)'
       )
     }
-    if (this.trayMenu.dev) {
-      //await db.exec(`UPDATE cctv SET status = '${CCTV.uploadStatus.ready}'`)
-    }
     await db.exec(
-      `DELETE FROM cctv WHERE datetime(timestamp) < datetime('now', '-7 days')`
+      `DELETE FROM cctv WHERE datetime(timestamp) < datetime('now', '-1 month')`
     )
     await db.close()
   }
@@ -174,8 +209,8 @@ export class CCTV {
   startServices = async () => {
     await this.createDb()
     this.startMediaService()
-    await this.startMoveLeftoverClipsService()
-    await this.startSyncDbService()
+    this.startMoveLeftoverClipsService()
+    this.startSyncDbService()
   }
 
   private startMediaService = () => {
@@ -193,40 +228,20 @@ export class CCTV {
 
   static registerNewRecordings = (express: Express, trayMenu: TrayMenu) => {
     express.get('/registerNewRecordings', async (req, res) => {
-      const _path = path.join(
-        path.dirname(req.query.path as string),
-        path.basename(req.query.path as string, CCTV.inExt)
-      )
+      const _path = CCTV.makePath(req.query.path as string | null)
       const camera = req.query.camera as string | null
       if (!_path || !camera) return
 
-      const [inPath, outPath] = [
-        `${_path}${CCTV.inExt}`,
-        `${path.resolve(
-          _path,
-          '..',
-          '..',
-          '..',
-          'recordings',
-          camera,
-          path.basename(_path)
-        )}${CCTV.processingSuffix}${CCTV.outExt}`,
-      ]
-      const cleanPath =
-        path.join(
-          path.dirname(outPath),
-          path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
-        ) + CCTV.outExt
-
       const db = await CCTV.getDb()
-      const rawTime = path.basename(cleanPath, CCTV.outExt).slice(0, 26)
+      const rawTime = _path.basenameWithoutExt.slice(0, 26)
       await db.exec(
-        `INSERT INTO cctv (camera, path, timestamp, status)
-      VALUES ('${camera}', '${cleanPath}', '${`${
-          rawTime.split('_')[0]
-        }T${rawTime.split('_')[1].slice(0, 8).replaceAll('-', ':')}.${rawTime
-          .split('-')
-          .at(-1)}`}', '${CCTV.uploadStatus.streaming}')`
+        `INSERT INTO cctv (camera, inPath, timestamp, status)
+      VALUES ('${camera}', '${_path.in}', '${`${rawTime.split('_')[0]}T${rawTime
+          .split('_')[1]
+          .slice(0, 8)
+          .replaceAll('-', ':')}.${rawTime.split('-').at(-1)}`}', '${
+          CCTV.uploadStatus.streaming
+        }')`
       )
       await db.close()
     })
@@ -234,12 +249,9 @@ export class CCTV {
 
   static compressNewRecordings = (express: Express, trayMenu: TrayMenu) => {
     express.get('/compressNewRecordings', async (req, res) => {
-      const _path = path.join(
-        path.dirname(req.query.path as string),
-        path.basename(req.query.path as string, CCTV.inExt)
-      )
+      const _path = CCTV.makePath(req.query.path as string | null)
       const camera = req.query.camera as string | null
-      const duration = Number(req.query.duration as string)
+      const duration = Number(req.query.duration as string | null)
       if (!_path || !camera || !duration) return
 
       const db = await CCTV.getDb()
@@ -248,49 +260,18 @@ export class CCTV {
         status: CCTVUploadStatus.streamed,
       })
 
-      const [inPath, outPath] = [
-        `${_path}${CCTV.inExt}`,
-        `${path.resolve(
-          _path,
-          '..',
-          '..',
-          '..',
-          'recordings',
-          camera,
-          path.basename(_path)
-        )}${CCTV.processingSuffix}${CCTV.outExt}`,
-      ]
-      const cleanPath =
-        path.join(
-          path.dirname(outPath),
-          path.basename(outPath, `${CCTV.processingSuffix}${CCTV.outExt}`)
-        ) + CCTV.outExt
-
       const cameraObj = trayMenu.cctv.cameraLogins.find(
         (cl) => cl.username === camera
       )!
 
-      await CCTV.compress(
-        db,
-        trayMenu,
-        inPath,
-        outPath,
-        _path,
-        cleanPath,
-        duration,
-        camera,
-        cameraObj
-      )
+      await CCTV.compress(db, trayMenu, _path, duration, camera, cameraObj)
     })
   }
 
   static compress = async (
     db: Database<sqlite3.Database, sqlite3.Statement>,
     trayMenu: TrayMenu,
-    inPath: string,
-    outPath: string,
-    _path: string,
-    cleanPath: string,
+    _path: CCTVPath,
     duration: number,
     camera: string,
     cameraObj: CCTVObj
@@ -304,28 +285,28 @@ export class CCTV {
     if (cameraObj.enableCompression) {
       console.log('compression is enabled')
       //prettier-ignore
-      const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${inPath} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${outPath}`
+      const command = `${trayMenu.cctv.ffmpegBinaryPath} -hide_banner -loglevel error -i ${_path.in} -vf "scale=${cameraObj.compressedWidth}:-2, fps=${cameraObj.compressedFps}" -b:v ${cameraObj.compressedKbps}k -threads 1 -preset ${cameraObj.encodingPreset} ${_path.out}`
       console.log(command)
       exec(command, async (error, stdout, stderr) => {
         if (error) console.error(error)
         if (stderr) console.error(stderr)
-        console.log('compressing done! ->', path.basename(_path))
+        console.log('compressing done! ->', _path.in)
         await CCTV.updateDb(db, _path, {
           duration,
           status: CCTVUploadStatus.compressed,
         })
-        await CCTV.move(camera, cleanPath, duration, cameraObj)
+        await CCTV.move(camera, _path, duration, cameraObj)
       })
       result = { compressed: true }
     } else {
       console.log('compression is disabled')
-      await fs.copyFile(inPath, cleanPath)
+      await fs.rename(_path.in, _path.out)
 
       await CCTV.updateDb(db, _path, {
         duration,
         status: CCTVUploadStatus.compressed,
       })
-      await CCTV.move(camera, cleanPath, duration, cameraObj)
+      await CCTV.move(camera, _path, duration, cameraObj)
       result = { compressed: false }
     }
 
@@ -337,7 +318,7 @@ export class CCTV {
 
   static updateDb = async (
     db: Database<sqlite3.Database, sqlite3.Statement>,
-    path: string,
+    path: CCTVPath,
     fields: Partial<CCTVSchema & { incrementUploadCount: boolean }>
   ) => {
     const query = `UPDATE cctv
@@ -353,30 +334,17 @@ export class CCTV {
             }`
         )
         .join(', ')}
-      WHERE path = '${path}'`
-    console.log(query)
+      WHERE inPath = '${path.in}'`
     await db.exec(query)
   }
 
   static move = async (
     camera: string,
-    _path: string,
+    _path: CCTVPath,
     duration: number | null,
     cameraObj: CCTVObj
   ) => {
-    duration ??= (cameraObj.segmentDurationInMinutes / 2) * 60
-    let sizeInKb: number | undefined = undefined
-    try {
-      sizeInKb = (await fs.stat(_path)).size / 1000
-    } catch (error) {
-      console.error(error)
-      return
-    }
-    const throttleKbps = (sizeInKb * (1 / 0.8)) / duration //TODO: cameraObj.uploadCompletionTarget
-    console.log(
-      //prettier-ignore
-      `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
-    )
+    duration ??= (cameraObj.segmentDurationInMinutes / 2) * 60 // /2 is an estimation here
 
     const db = await CCTV.getDb()
     await CCTV.updateDb(db, _path, {
@@ -386,11 +354,11 @@ export class CCTV {
     })
     const syncResult = await Sync.upload({
       move: true,
-      path: _path,
+      path: _path.out,
       remotePath: `${cameraObj.remoteRootDir}/${camera}/${path.basename(
-        _path
+        _path.outBasename
       )}`,
-      throttleKbps,
+      throttle: { completionTarget: 0.8, duration }, //TODO: cameraObj.uploadCompletionTarget
       login: {
         host: cameraObj.remoteHost,
         username: cameraObj.remoteUsername,
@@ -408,15 +376,12 @@ export class CCTV {
   private startMoveLeftoverClipsService = async () => {
     const db = await CCTV.getDb()
     let leftoverClips = await db.all<
-      {
-        camera: string
-        path: string
-        duration: number
-        status: CCTVUploadStatus
-        timestamp: string
-      }[]
+      Pick<
+        CCTVSchema,
+        'camera' | 'inPath' | 'duration' | 'status' | 'timestamp'
+      >[]
     >(
-      `SELECT camera, path, duration, status, timestamp FROM cctv WHERE status not in (
+      `SELECT camera, inPath, duration, status, timestamp FROM cctv WHERE status not in (
         '${CCTV.uploadStatus.uploaded}'
       ) ORDER BY datetime(timestamp) ASC LIMIT 10`
     )
@@ -426,38 +391,29 @@ export class CCTV {
         (cl) => cl.username === lc.camera
       )!
 
-      return !(
-        lc.status === CCTVUploadStatus.compressed ||
+      return lc.status === CCTVUploadStatus.compressed ||
         lc.status === CCTVUploadStatus.uploading
-      )
         ? Date.now() >
             new Date(lc.timestamp).getTime() +
               (lc.duration
                 ? lc.duration * 1000
-                : camaraObj.segmentDurationInMinutes * 60 * 1000 * 2)
+                : camaraObj.segmentDurationInMinutes * 60 * 1000 * 1.1)
         : true
     })
     for (const clip of leftoverClips.filter(
       (lc) =>
-        !(
-          lc.status === CCTVUploadStatus.uploading ||
-          lc.status === CCTVUploadStatus.compressed
-        )
+        lc.status === CCTVUploadStatus.streamed ||
+        lc.status === CCTVUploadStatus.streaming
     )) {
       //TODO compressing old, but streaming clips first (instead of directly uploading it)
+      const _path = CCTV.makePath(clip.inPath)!
       try {
-        await fs.rename(
-          path.join(
-            path.dirname(clip.path),
-            path.basename(clip.path, CCTV.outExt)
-          ) + CCTV.inExt,
-          clip.path
-        )
+        await fs.rename(_path.in, _path.out)
       } catch (error) {
-        console.error('already renamed -> ', clip.path)
+        console.error('already renamed -> ', _path.in)
       }
 
-      await CCTV.updateDb(db, clip.path, {
+      await CCTV.updateDb(db, _path, {
         status: CCTVUploadStatus.compressed,
       })
     }
@@ -468,7 +424,7 @@ export class CCTV {
       leftoverClips.map((lc) =>
         CCTV.move(
           lc.camera,
-          lc.path,
+          CCTV.makePath(lc.inPath)!,
           lc.duration,
           this.trayMenu.cctv.cameraLogins.find(
             (cl) => cl.username === lc.camera
@@ -487,6 +443,7 @@ export class CCTV {
       path: CCTV.dbname,
       move: false,
       remotePath: `/home/mbene/dbs/${this.trayMenu.locationName}.db`,
+      throttle: { completeInSeconds: 10 },
       login: {
         host: process.env.SFTP_HOST!,
         username: process.env.SFTP_USER!,
@@ -499,7 +456,7 @@ export class CCTV {
       console.error('db sync errored!')
     }
 
-    setTimeout(() => this.startSyncDbService(), 60 * 60 * 1000)
+    setTimeout(() => this.startSyncDbService(), 10 * 60 * 1000)
   }
 
   killService = async () => {

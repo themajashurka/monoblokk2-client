@@ -4,12 +4,16 @@ import fs from 'fs/promises'
 import fsSync from 'fs'
 import nodePath from 'path'
 
+type ThrottleArgs =
+  | { duration: number; completionTarget?: number }
+  | { completeInSeconds: number }
+
 export class Sync {
   static upload = async (args: {
     path: string
     remotePath: string
     move: boolean
-    throttleKbps?: number
+    throttle?: ThrottleArgs
     login: {
       host: string
       username: string
@@ -22,7 +26,12 @@ export class Sync {
       password: args.login.password,
       timeout: 30 * 1000,
       throttle: {
-        bps: args.throttleKbps ? args.throttleKbps * 1000 : undefined,
+        bps: args.throttle
+          ? (await Sync.calculateThrottleBandwidth({
+              path: args.path,
+              ...args.throttle,
+            })) * 1000
+          : undefined,
       } as Throttle.Options,
     }
 
@@ -31,7 +40,7 @@ export class Sync {
     const client = new Client()
 
     let input: Throttle | Buffer
-    if (args.throttleKbps) {
+    if (args.throttle) {
       input = new Throttle(config.throttle)
       const readStream = fsSync.createReadStream(args.path)
       readStream.pipe(input)
@@ -64,5 +73,22 @@ export class Sync {
         console.error('upload errored ->', err.message)
         return { ok: false }
       })
+  }
+
+  static calculateThrottleBandwidth = async (
+    args: ThrottleArgs & { path: string }
+  ) => {
+    const sizeInKb = (await fs.stat(args.path)).size / 1000
+    const throttleKbps =
+      sizeInKb *
+      ('duration' in args
+        ? 1 / (args.completionTarget ?? 1) / args.duration
+        : 1 / args.completeInSeconds)
+    console.log(
+      //prettier-ignore
+      'duration' in args ?  `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${args.duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
+       : `size is -> ${sizeInKb.toFixed(1)}kb, complete in -> ${args.completeInSeconds.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
+    )
+    return throttleKbps
   }
 }

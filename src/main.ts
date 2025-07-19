@@ -27,7 +27,6 @@ config({
 })
 import log from 'electron-log/node'
 import { Log } from './lib/log'
-import { electron } from 'process'
 console.log = log.log
 console.error = log.error
 console.info = log.info
@@ -116,12 +115,9 @@ app.on('ready', async () => {
 
   express.listen(3000)
 
-  setInterval(
-    () => {
-      Log.sync(trayMenu)
-    },
-    dev ? 1000 * 10 : 1000 * 60 * 60
-  )
+  setInterval(() => {
+    Log.sync(trayMenu)
+  }, 1000 * 30 * 60)
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
