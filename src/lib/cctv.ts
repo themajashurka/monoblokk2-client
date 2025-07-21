@@ -368,7 +368,7 @@ export class CCTV {
     >(
       `SELECT camera, inPath, duration, status, timestamp FROM cctv
       WHERE status != '${CCTV.uploadStatus.uploaded}'
-      ORDER BY datetime(timestamp) ASC LIMIT 10`
+      ORDER BY datetime(timestamp) DESC LIMIT 10`
     )
 
     leftoverClips = leftoverClips.filter((lc) => {
