@@ -25,6 +25,7 @@ export const baseFetch = async (
         body: JSON.stringify({
           ...body,
           deviceId,
+          locationName: trayMenu.locationName ?? null,
         }),
         headers: {
           'Monoblokk-Api-Key': apiKey,
