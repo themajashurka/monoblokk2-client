@@ -6,6 +6,7 @@ import fs from 'fs/promises'
 import { baseFetch } from './baseFetch'
 import { Nettest } from './nettest'
 import { CCTV } from './cctv'
+import { CashRegister } from './cashRegister'
 
 export type User = string
 
@@ -21,9 +22,14 @@ export class TrayMenu {
   settings: Settings
   nettest: Nettest
   cctv: CCTV
+  cashRegister: CashRegister
   heartbeatCount = { count: 0, last: new Date() }
   initting = false
   heartbeatTimeout: NodeJS.Timeout | undefined
+  ip!: {
+    mac: string
+    ip: string
+  }
 
   public set setPrinters(printers: Printer[]) {
     this.printers = printers
@@ -57,12 +63,13 @@ export class TrayMenu {
     this.settings = new Settings(this)
     this.nettest = new Nettest(this)
     this.cctv = new CCTV(this)
+    this.cashRegister = new CashRegister(this)
   }
 
   init = async (args?: { resetSettingsOnly?: boolean }) => {
     console.log(
       'START INITING',
-      args?.resetSettingsOnly ? 'resetting only!' : ''
+      args?.resetSettingsOnly ? 'resetting only!' : '',
     )
     this.initting = true
     clearTimeout(this.heartbeatTimeout)
@@ -73,8 +80,8 @@ export class TrayMenu {
     if (!args?.resetSettingsOnly) {
       this.tray = new Tray(
         nativeImage.createFromPath(
-          this.dev ? 'M.png' : path.join(process.resourcesPath, 'M.png')
-        )
+          this.dev ? 'M.png' : path.join(process.resourcesPath, 'M.png'),
+        ),
       )
       this.tray.setToolTip('Monoblokk kliens')
     }
@@ -85,7 +92,7 @@ export class TrayMenu {
         ipMac.mac,
         '/api/external/local-client/inform-ip',
         { ipAddress: ipMac.ip },
-        this
+        this,
       )
       if (!informIpResult.ok) {
         this.initting = false
@@ -212,7 +219,7 @@ export class TrayMenu {
                     {
                       enabled: false,
                       label: `Utolsó mérés: ${Nettest.parseDate(
-                        this.nettest.lastMeasurement
+                        this.nettest.lastMeasurement,
                       )}`,
                     },
                   ]
@@ -220,19 +227,19 @@ export class TrayMenu {
               {
                 enabled: false,
                 label: `Letöltés: ${this.nettest.basicResults.downloadSpeedInMbps.toFixed(
-                  2
+                  2,
                 )}Mb/s`,
               },
               {
                 enabled: false,
                 label: `Feltöltés: ${this.nettest.basicResults.uploadSpeedInMbps.toFixed(
-                  2
+                  2,
                 )}Mb/s`,
               },
               {
                 enabled: false,
                 label: `Ping: ${this.nettest.basicResults.pingInMs.toFixed(
-                  2
+                  2,
                 )}ms`,
               },
 
@@ -242,7 +249,7 @@ export class TrayMenu {
                     {
                       enabled: false,
                       label: `Következő mérés: ${Nettest.parseDate(
-                        this.nettest.nextMeasurement
+                        this.nettest.nextMeasurement,
                       )}`,
                     },
                   ]
@@ -295,7 +302,7 @@ export class TrayMenu {
     this.setPrinters = [new Printer('Frissítés...', 'refreshing', this)]
     setTimeout(
       () => (this.setPrinters = Printer.getPrinters(this)),
-      this.refreshPrinterInterval
+      this.refreshPrinterInterval,
     )
   }
 
@@ -323,15 +330,13 @@ export class TrayMenu {
 
   beginHeartbeat = async (args?: { resetHeartbeats?: boolean }) => {
     const updateSettings = await baseFetch(
-      (
-        await this.settings.getMacIp()
-      ).mac,
+      (await this.settings.getMacIp()).mac,
       '/api/external/local-client/heartbeat',
       {
         resetted: args?.resetHeartbeats,
         version: app.getVersion(),
       },
-      this
+      this,
     )
 
     if (updateSettings.ok) {
@@ -344,7 +349,7 @@ export class TrayMenu {
             this.init({ resetSettingsOnly: true })
           } catch (error) {
             console.error(
-              'because of settings change a restart was needed, and initting failed at beginHeartbeat'
+              'because of settings change a restart was needed, and initting failed at beginHeartbeat',
             )
           }
           return

@@ -4,6 +4,10 @@ import { setShiftState } from './setShiftState'
 import { welcome } from './welcome'
 import type { Express } from 'express'
 import { CCTV } from './cctv'
+import { CashRegister } from './cashRegister'
+import { TrayMenu } from './trayMenu'
+import { baseFetch, baseUrl } from './baseFetch'
+import { POS } from './pos'
 
 export const endpoint = {
   welcome,
@@ -17,4 +21,9 @@ export const endpoint = {
   getLocationName: getLocationName,
   compressNewRecordings: CCTV.compressNewRecordings,
   registerNewRecordings: CCTV.registerNewRecordings,
+  sell: CashRegister.sell,
+  storno: CashRegister.storno,
+  open: CashRegister.open,
+  close: CashRegister.close,
+  pos: POS.initEndpoint,
 }

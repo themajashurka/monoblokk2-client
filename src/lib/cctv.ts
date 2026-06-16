@@ -3,12 +3,14 @@ import path from 'path'
 import { TrayMenu } from './trayMenu'
 const _fkill = import('fkill').then((x) => x.default)
 import fs from 'fs/promises'
+import fsSync from 'fs'
 import { app } from 'electron'
 import { EOL } from 'node:os'
 import type { Express } from 'express'
 import { Sync } from './sync'
 import sqlite3 from 'sqlite3'
 import { Database, open } from 'sqlite'
+import ZipArchive from 'archiver'
 
 export type CCTVObj = CCTV['cameraLogins'][number]
 enum CCTVUploadStatus {
@@ -59,7 +61,7 @@ export class CCTV {
     password: string
     ip: string
   }[] = []
-  port: number = 8891
+  port = 8891
 
   static dbname = path.join(app.getPath('userData'), 'main.db')
   static inExt = '.ts'
@@ -104,7 +106,7 @@ export class CCTV {
 
     const config = await fs.readFile(templateConfigPath, { encoding: 'utf8' })
 
-    let configArr: string[] = config.split(EOL)
+    const configArr: string[] = config.split(EOL)
 
     for (const line of [
       'paths:',
@@ -482,5 +484,34 @@ export class CCTV {
       default:
         break
     }
+  }
+
+  takeSnapshots = (express: Express) => {
+    express.get('', async (req, res) => {
+      const filenames = this.cameraLogins.map((cl) => `${cl.username}.jpg`)
+      await Promise.allSettled(
+        filenames.map(
+          (f) =>
+            new Promise((res, rej) => {
+              exec('ffmpeg ...', async () => {
+                res('')
+              })
+            })
+        )
+      )
+
+      const output = fsSync.createWriteStream(__dirname + '/example.zip')
+      const archive = ZipArchive('zip', {
+        zlib: { level: 9 }, // Sets the compression level.
+      })
+      archive.pipe(output)
+
+      for (const fn of filenames) {
+        archive.file(fn, { name: fn })
+      }
+      await archive.finalize()
+
+      res.download('hehe')
+    })
   }
 }

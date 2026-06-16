@@ -7,6 +7,7 @@ import type { CCTVObj } from './cctv'
 import path from 'path'
 import { app } from 'electron'
 import { NettestSettings } from './nettest'
+import { CashRegisterSettings } from './cashRegister'
 let ipIsPrivate: (x: string) => boolean | undefined
 import('private-ip').then((x) => (ipIsPrivate = x.default))
 
@@ -23,6 +24,7 @@ type SettingsData = {
   recordDeleteAfterDays: number
   users: User[]
   nettestSettings: NettestSettings
+  cashRegisterSettings: CashRegisterSettings
 }
 
 export class Settings {
@@ -46,7 +48,7 @@ export class Settings {
             ipIsPrivate(x.address) &&
             !x.internal &&
             x.family === 'IPv4' &&
-            x.address.split('.')[0] !== '10'
+            x.address.split('.')[0] !== '10',
         )[0]!
 
         try {
@@ -55,7 +57,7 @@ export class Settings {
           console.error(
             'app needs to be a part of a local network, trying again...',
             'ip-s:',
-            allip.map((i) => i.address)
+            allip.map((i) => i.address),
           )
           rej()
         }
@@ -97,6 +99,7 @@ export class Settings {
   getApiKey = async (env: Env) => {
     const ip = await this.getMacIp()
     console.log('getApiKey with this ip ->', ip)
+    this.trayMenu.ip = ip
     const settings = await baseFetch(
       ip.mac,
       '/api/external/local-client/link-location',
@@ -104,7 +107,7 @@ export class Settings {
         locationName: env.locationName,
         passcode: env.passcode,
       },
-      this.trayMenu
+      this.trayMenu,
     )
     if (!settings.ok) throw new Error('unsuccessful linking')
 
@@ -117,23 +120,21 @@ export class Settings {
 
   getImported = async (env: Env) => {
     const settings = await baseFetch(
-      (
-        await this.getMacIp()
-      ).mac,
+      (await this.getMacIp()).mac,
       '/api/external/local-client/get-settings',
       {},
-      this.trayMenu
+      this.trayMenu,
     )
 
     return settings.details
   }
 
   get = async (): Promise<boolean> => {
-    let showPasscodeDialog: boolean = true
+    let showPasscodeDialog = true
     try {
       const env = await Settings.loadEnvFile(
         this.trayMenu,
-        Settings.settingsPath
+        Settings.settingsPath,
       )
       if (!env) {
         return showPasscodeDialog
@@ -156,12 +157,10 @@ export class Settings {
 
   save = async (settingsData: Partial<SettingsData>) => {
     await baseFetch(
-      (
-        await this.getMacIp()
-      ).mac,
+      (await this.getMacIp()).mac,
       '/api/external/local-client/set-settings',
       settingsData,
-      this.trayMenu
+      this.trayMenu,
     )
   }
 
@@ -170,7 +169,7 @@ export class Settings {
     if (this.imported.printers) {
       this.imported.printers.map((p) => {
         const currentPrinter = this.trayMenu.printers.find(
-          (_p) => _p.name === p.name
+          (_p) => _p.name === p.name,
         )
         if (currentPrinter) {
           currentPrinter.type = p.type
@@ -189,5 +188,12 @@ export class Settings {
     if (this.imported.nettestSettings) {
       this.trayMenu.nettest.settings = this.imported.nettestSettings
     }
+    /* if (this.imported.cashRegisterSettings) {
+      this.trayMenu.cashRegister.settings = this.imported.cashRegisterSettings
+    } */
+    this.trayMenu.cashRegister.setSettings({
+      baudRate: 9600,
+      manufacturer: 'Datecs',
+    })
   }
 }

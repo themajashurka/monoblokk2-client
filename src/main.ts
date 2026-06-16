@@ -12,7 +12,12 @@ import _express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 const express = _express()
-express.use(cors(), cookieParser())
+express.use(cors(), cookieParser(), _express.json())
+express.options('*', cors())
+express.use((req, _res, next) => {
+  console.log(req.method, req.url)
+  next()
+})
 const dev = !app.isPackaged
 if (dev) process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 import { endpoint } from './lib/endpoints'
@@ -86,7 +91,7 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL)
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     )
   }
 
@@ -112,12 +117,20 @@ app.on('ready', async () => {
   endpoint.getLocationName(express, trayMenu)
   endpoint.compressNewRecordings(express, trayMenu)
   endpoint.registerNewRecordings(express, trayMenu)
+  endpoint.sell(express, trayMenu)
+  endpoint.storno(express, trayMenu)
+  endpoint.open(express, trayMenu)
+  endpoint.close(express, trayMenu)
+  endpoint.pos(express, trayMenu)
 
   express.listen(3000)
 
-  setInterval(() => {
-    Log.sync(trayMenu)
-  }, 1000 * 30 * 60)
+  setInterval(
+    () => {
+      Log.sync(trayMenu)
+    },
+    1000 * 30 * 60,
+  )
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
