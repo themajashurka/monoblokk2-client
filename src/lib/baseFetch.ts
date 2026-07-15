@@ -2,18 +2,18 @@ import { TrayMenu } from './trayMenu'
 
 export type Object = { [key: string]: any }
 
-export const baseUrl = (dev: boolean) =>
-  dev ? 'https://localhost:5555' : 'https://2.monoblokk.eu'
+export const baseUrl = (trayMenu: TrayMenu) =>
+  trayMenu.dev ? `https://${trayMenu.ip.ip}:5555` : 'https://2.monoblokk.eu'
 
 export const baseFetch = async (
   deviceId: string,
   pathname: string,
   body: { [key: string]: any },
-  trayMenu: TrayMenu
+  trayMenu: TrayMenu,
 ) => {
   const apiKey =
     trayMenu.apiKey ?? process.env.APIKEY_EXTERNAL_ACQUIRE_CLIENT_KEY
-  const url = baseUrl(trayMenu.dev) + pathname
+  const url = baseUrl(trayMenu) + pathname
 
   let result: Record<any, any> & { ok: boolean } = { ok: false }
 
@@ -48,7 +48,7 @@ export const baseFetch = async (
     } catch (error) {
       console.error(
         'baseFetch errored. trying again...',
-        `(${i} retries so far)`
+        `(${i} retries so far)`,
       )
       await new Promise((res) => setTimeout(() => res(''), 500))
       result.ok = false
@@ -67,8 +67,8 @@ export const baseFetch = async (
 export const baseRedirectUrl = (
   pathname: string,
   body: { [key: string]: any },
-  dev: boolean
+  trayMenu: TrayMenu,
 ) => {
   const sp = new URLSearchParams(Object.entries(body))
-  return `${baseUrl(dev)}${pathname}?${sp.toString()}`
+  return `${baseUrl(trayMenu)}${pathname}?${sp.toString()}`
 }

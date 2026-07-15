@@ -15,7 +15,7 @@ export const setShiftState =
         deviceId,
         '/api/external/local-client/schedule/' + state.toLowerCase(),
         { date },
-        trayMenu
+        trayMenu,
       )
       if (result.ok) {
         try {
@@ -39,8 +39,8 @@ export const setShiftState =
                 shiftId: result.shiftId,
                 confirmed: true,
               },
-              trayMenu.dev
-            )
+              trayMenu,
+            ),
           )
         }
       } else {
@@ -54,8 +54,8 @@ export const setShiftState =
                 confirmed: true,
                 notReady: true,
               },
-              trayMenu.dev
-            )
+              trayMenu,
+            ),
           )
         }
       }

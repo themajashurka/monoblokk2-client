@@ -5,8 +5,6 @@ import { welcome } from './welcome'
 import type { Express } from 'express'
 import { CCTV } from './cctv'
 import { CashRegister } from './cashRegister'
-import { TrayMenu } from './trayMenu'
-import { baseFetch, baseUrl } from './baseFetch'
 import { POS } from './pos'
 
 export const endpoint = {

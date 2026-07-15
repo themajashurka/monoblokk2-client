@@ -15,13 +15,15 @@ export class POS {
         trayMenu,
       )
 
-      res.cookie('apiKey', apiKey.details.value, {
+      /*  res.cookie('apiKey', apiKey.details.value, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: false,
+        sameSite: 'lax',
         path: '/pos',
-      })
-      res.redirect(`${baseUrl(trayMenu.dev)}/pos/${trayMenu.locationName}`)
+      }) */
+      res.redirect(
+        `${baseUrl(trayMenu)}/pos/${trayMenu.locationName}?apiKey=${apiKey.details.value}&ip=${trayMenu.ip.ip.replaceAll('.', '-')}`,
+      )
     })
   }
 }
