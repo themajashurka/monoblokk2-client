@@ -59,7 +59,10 @@ export class Sync {
         return client.mkdir(nodePath.dirname(args.remotePath), true)
       })
       .then(() => {
-        return client.put(input, args.remotePath)
+        return client.put(input, args.remotePath + '.inprogress')
+      })
+      .then(() => {
+        return client.rename(args.remotePath + '.inprogress', args.remotePath)
       })
       .then(() => {
         return client.end()
@@ -76,7 +79,7 @@ export class Sync {
   }
 
   static calculateThrottleBandwidth = async (
-    args: ThrottleArgs & { path: string }
+    args: ThrottleArgs & { path: string },
   ) => {
     const sizeInKb = (await fs.stat(args.path)).size / 1000
     const throttleKbps =
@@ -87,7 +90,7 @@ export class Sync {
     console.log(
       //prettier-ignore
       'duration' in args ?  `size is -> ${sizeInKb.toFixed(1)}kb, duration is -> ${args.duration.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
-       : `size is -> ${sizeInKb.toFixed(1)}kb, complete in -> ${args.completeInSeconds.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`
+       : `size is -> ${sizeInKb.toFixed(1)}kb, complete in -> ${args.completeInSeconds.toFixed(1)}s, throttle at -> ${throttleKbps.toFixed(1)}kb/s`,
     )
     return throttleKbps
   }
