@@ -56,7 +56,7 @@ export class Printer {
         const pdfBuffer = await fs.readFile(
           this.trayMenu.dev
             ? './print_test.pdf'
-            : path.join(process.resourcesPath, 'print_test.pdf')
+            : path.join(process.resourcesPath, 'print_test.pdf'),
         )
 
         try {

@@ -18,12 +18,19 @@ export class CashRegister {
   }
 
   private static detectUsbDevicePath = (): string => {
-    const devices = fs
-      .readdirSync('/dev/')
-      .filter((entry) => entry.startsWith('ttyUSB'))
-    if (devices.length === 0) {
-      throw new Error('No USB serial device detected')
+    let devices: string[] = []
+
+    try {
+      devices = fs
+        .readdirSync('/dev/')
+        .filter((entry) => entry.startsWith('ttyUSB'))
+      if (devices.length === 0) {
+        throw new Error('No USB serial device detected')
+      }
+    } catch (error) {
+      console.error('/dev cannot be read (cashregister auto lookup)')
     }
+
     return `/dev/${devices[0]}`
   }
 
