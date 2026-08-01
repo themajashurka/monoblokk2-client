@@ -15,15 +15,22 @@ export class POS {
         trayMenu,
       )
 
-      /*  res.cookie('apiKey', apiKey.details.value, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        path: '/pos',
-      }) */
       res.redirect(
         `${baseUrl(trayMenu)}/pos/${trayMenu.locationName}?apiKey=${apiKey.details.value}&ip=${trayMenu.ip.ip.replaceAll('.', '-')}`,
       )
+    })
+  }
+
+  static forwardHeartbeat = async (express: Express, trayMenu: TrayMenu) => {
+    express.get('/pos-heartbeat', async function (req, res) {
+      const result = await baseFetch(
+        (await trayMenu.settings.getMacIp()).mac,
+        '/api/external/local-client/pos-heartbeat',
+        { version: req.query.version },
+        trayMenu,
+      )
+
+      res.json({ ok: result.ok })
     })
   }
 }

@@ -122,6 +122,7 @@ app.on('ready', async () => {
   endpoint.open(express, trayMenu)
   endpoint.close(express, trayMenu)
   endpoint.pos(express, trayMenu)
+  endpoint.posHeartbeat(express, trayMenu)
 
   express.listen(3000)
 

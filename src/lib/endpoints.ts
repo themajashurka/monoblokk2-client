@@ -24,4 +24,5 @@ export const endpoint = {
   open: CashRegister.open,
   close: CashRegister.close,
   pos: POS.initEndpoint,
+  posHeartbeat: POS.forwardHeartbeat,
 }
